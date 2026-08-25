@@ -94,7 +94,3 @@ python3 exercises/python-basics/input_and_loops.py
 ## Minecraft 版本原則
 
 Fabric 與 NeoForge 應分別建立、建置與驗證，不直接交叉複製 API。實作前請記錄目標 Minecraft、Java、loader、API／MDK 與建置工具版本，並以該版本的官方文件確認相容性。
-
-## 授權
-
-本專案採用 [MIT License](LICENSE)。
