@@ -55,9 +55,13 @@
   .wordmark-lockup { @apply flex items-baseline gap-1 font-serif text-[1.2rem] font-black leading-none tracking-[0.045em] text-slate-950; }
   .brand-wordmark { position: relative; font-size: clamp(1.25rem, 2vw, 1.5rem); letter-spacing: .06em; }
   .brand-wordmark::after { content: "J-00"; margin-left: .5rem; color: #50667a; font-family: "IBM Plex Mono", monospace; font-size: .34em; font-weight: 700; letter-spacing: .16em; vertical-align: middle; }
-  .wordmark-java { @apply font-mono text-[0.8em] font-bold tracking-[0.13em] text-teal-800; }
+  .wordmark-java { @apply font-mono text-[0.8em] font-bold tracking-[0.13em] text-slate-800; }
   .wordmark-divider { @apply -mx-0.5 font-mono text-[0.78em] text-amber-700; }
   .verification-dot { @apply h-2 w-2 rounded-full bg-teal-600 shadow-[0_0_0_4px_rgba(15,157,138,0.13)]; }
+  .workbench-tools { opacity: .82; }
+  .workbench-tools > button, .workbench-tools > span { box-shadow: none; }
+  .workbench-tools > button { border-radius: 2px; border-color: rgba(23,38,58,.12); background: rgba(255,253,247,.5); color: #50667a; }
+  .workbench-tools > button:hover { border-color: rgba(23,38,58,.35); background: #fffdf7; color: #17263a; }
   .nav-row { @apply flex w-full items-center gap-2 rounded-md px-2.5 py-2.5 text-sm text-slate-700 transition duration-150 hover:bg-slate-900/[0.055] hover:text-slate-950 active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-teal-600; }
   .nav-row-active { @apply bg-teal-700 text-[#f8f4e9] shadow-sm hover:bg-teal-800 hover:text-white; }
   .nav-row-active span { @apply text-[#f8f4e9]; }
@@ -100,6 +104,8 @@
   .route-status { @apply rounded-sm bg-slate-900/[0.08] px-1.5 py-1 font-mono text-[9px] font-semibold tracking-[0.06em] text-slate-700; }
   .current-note-canvas::after { content: "CURRENT COORDINATE  ·  VERIFY → PRACTICE → RECORD"; position: absolute; z-index: 1; right: 20px; top: 72px; color: rgba(80,102,122,.48); font-family: "IBM Plex Mono", monospace; font-size: 8px; font-weight: 700; letter-spacing: .11em; writing-mode: vertical-rl; }
   .current-note-canvas > * { position: relative; z-index: 2; }
+  .reference-drawer { position: relative; }
+  .reference-drawer::after { content: "01  LOCATE\A 02  VERIFY\A 03  PRACTICE\A 04  RECORD"; white-space: pre; display: block; margin-top: 1.2rem; border-left: 2px solid rgba(23,38,58,.28); padding: .45rem 0 .45rem .65rem; color: #50667a; font-family: "IBM Plex Mono", monospace; font-size: 8px; font-weight: 700; letter-spacing: .12em; line-height: 2.1; }
   .backup-index-card { position: relative; border: 1px solid rgba(23,38,58,.17); border-radius: 2px; background: #fffdf7; box-shadow: 7px 7px 0 rgba(23,38,58,.035); }
   .backup-index-card::before { content: ""; position: absolute; top: 0; left: 14px; width: 34px; border-top: 3px solid #17263a; }
   .backup-index-card::after { content: "ARCHIVE"; position: absolute; top: 11px; right: 12px; color: #50667a; font-family: "IBM Plex Mono", monospace; font-size: 8px; font-weight: 700; letter-spacing: .12em; }
@@ -168,6 +174,7 @@
   .route-module-grid::before { display: none; }
   .route-module-grid::after { display: none; }
   .current-note-canvas::after { display: none; }
+  .reference-drawer::after { display: none; }
   .route-path-ruler { gap: .35rem; }
   .hero-schematic::before { right: -45%; }
   .schematic-code, .schematic-axis { display: none; }

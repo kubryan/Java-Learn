@@ -1,20 +1,96 @@
-/** Design reminder — 藍圖工作桌：編輯區必須清楚區分實體來源、寫入保護與可追溯的變更。 */
-import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
-import { Bold, Code2, ImagePlus, Italic, Link, Save, Table2 } from "lucide-react";
+/** Design reminder — 藍圖工作桌：編輯區必須清楚區分實體來源、寫入保護與可追溯的變更；自動保存要安靜但永遠可查驗。 */
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+import { AlertCircle, Bold, Check, CloudUpload, Code2, ImagePlus, Italic, Link, RotateCcw, Save, Table2 } from "lucide-react";
 import type { Note } from "@/lib/notes";
 import { WikiMarkdown } from "./WikiMarkdown";
 
 type DiskNote = { content: string; hash: string; modifiedAt: string };
+type SavePhase = "loading" | "saved" | "editing" | "saving" | "conflict" | "error" | "unavailable";
 
-export function MarkdownEditor({ note, onOpenNote }: { note: Note; onOpenNote: (note: Note) => void }) {
-  const [draft, setDraft] = useState(""); const [hash, setHash] = useState(""); const [status, setStatus] = useState("正在讀取實體 Markdown…"); const [saving, setSaving] = useState(false); const textarea = useRef<HTMLTextAreaElement>(null);
+const AUTO_SAVE_DELAY = 1200;
+
+export function MarkdownEditor({ note, onOpenNote, onDirtyChange, onSaved }: { note: Note; onOpenNote: (note: Note) => void; onDirtyChange?: (dirty: boolean) => void; onSaved?: () => void }) {
+  const [draft, setDraft] = useState("");
+  const [hash, setHash] = useState("");
+  const [status, setStatus] = useState("正在讀取實體 Markdown…");
+  const [phase, setPhase] = useState<SavePhase>("loading");
+  const [lastSavedAt, setLastSavedAt] = useState("");
+  const [reloadNonce, setReloadNonce] = useState(0);
+  const textarea = useRef<HTMLTextAreaElement>(null);
+  const draftRef = useRef("");
+  const savedContentRef = useRef("");
+  const hashRef = useRef("");
+  const saveInFlightRef = useRef(false);
+  const saveQueuedRef = useRef(false);
+  const loadedRef = useRef(false);
   const relativePath = note.path.replace(/^content\//, "");
-  useEffect(() => { let cancelled = false; setStatus("正在讀取實體 Markdown…"); fetch("/api/local/read", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: relativePath }) }).then(async (response) => { const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.error || "無法讀取實體檔案"); return result as DiskNote; }).then((result) => { if (!cancelled) { setDraft(result.content); setHash(result.hash); setStatus(`實體檔案 · 上次修改 ${new Date(result.modifiedAt).toLocaleString("zh-TW")}`); } }).catch(() => { if (!cancelled) { setDraft(note.body); setHash(""); setStatus("本機管理服務未啟動；目前只能預覽，無法安全寫入檔案。"); } }); return () => { cancelled = true; }; }, [note.slug, relativePath, note.body]);
+  const dirty = Boolean(hash) && draft !== savedContentRef.current;
+
+  const setDraftValue = (value: string) => { draftRef.current = value; setDraft(value); if (phase === "error") { setPhase("editing"); setStatus("正在編輯…停止輸入後將再次嘗試自動保存。"); } };
+
+  useEffect(() => {
+    let cancelled = false;
+    loadedRef.current = false; saveInFlightRef.current = false; saveQueuedRef.current = false; hashRef.current = ""; savedContentRef.current = "";
+    setPhase("loading"); setStatus("正在讀取實體 Markdown…"); setHash(""); setLastSavedAt(""); onDirtyChange?.(false);
+    fetch("/api/local/read", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: relativePath }) })
+      .then(async (response) => { const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.error || "無法讀取實體檔案"); return result as DiskNote; })
+      .then((result) => {
+        if (cancelled) return;
+        loadedRef.current = true; hashRef.current = result.hash; savedContentRef.current = result.content;
+        setDraftValue(result.content); setHash(result.hash); setLastSavedAt(result.modifiedAt); setPhase("saved");
+        setStatus(`已保存 · 實體檔案上次修改 ${new Date(result.modifiedAt).toLocaleString("zh-TW")}`);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDraftValue(note.body); setPhase("unavailable"); setStatus("本機管理服務未啟動；目前只能預覽，無法安全寫入檔案。");
+      });
+    return () => { cancelled = true; };
+  }, [note.slug, relativePath, note.body, onDirtyChange, reloadNonce]);
+
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+
+  const saveNow = useCallback(async (trigger: "auto" | "manual") => {
+    if (!hashRef.current || !loadedRef.current) { setPhase("unavailable"); setStatus("找不到實體檔案版本；請以 pnpm dev 開啟本機工作台後再保存。"); return; }
+    if (saveInFlightRef.current) { saveQueuedRef.current = true; return; }
+    const content = draftRef.current;
+    if (content === savedContentRef.current) { setPhase("saved"); return; }
+    saveInFlightRef.current = true; setPhase("saving"); setStatus(trigger === "manual" ? "正在立即保存實體 Markdown…" : "正在自動保存實體 Markdown…");
+    try {
+      const response = await fetch("/api/local/write", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: relativePath, content, expectedHash: hashRef.current }) });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || "保存失敗");
+      hashRef.current = String(result.hash); savedContentRef.current = content;
+      setHash(hashRef.current); setLastSavedAt(String(result.modifiedAt)); setPhase("saved");
+      setStatus(`已保存 · ${new Date(String(result.modifiedAt)).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} 已寫入實體 Markdown 並建立備份`);
+      onSaved?.();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "保存失敗";
+      const isConflict = message.includes("重新載入") || message.includes("其他操作修改");
+      setPhase(isConflict ? "conflict" : "error");
+      setStatus(isConflict ? "檔案在磁碟上已有較新版本；請重新載入後再保存，避免覆寫他人變更。" : message);
+    } finally {
+      saveInFlightRef.current = false;
+      if (saveQueuedRef.current || draftRef.current !== savedContentRef.current) {
+        saveQueuedRef.current = false;
+        window.setTimeout(() => void saveNow("auto"), 220);
+      }
+    }
+  }, [onSaved, relativePath]);
+
+  useEffect(() => {
+    if (!loadedRef.current || !hash || draft === savedContentRef.current || phase === "saving" || phase === "conflict" || phase === "error") return;
+    setPhase("editing"); setStatus("正在編輯…停止輸入後將自動保存。");
+    const timer = window.setTimeout(() => void saveNow("auto"), AUTO_SAVE_DELAY);
+    return () => window.clearTimeout(timer);
+  }, [draft, hash, phase, saveNow]);
+
   const previewMarkdown = useMemo(() => draft.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, ""), [draft]);
   const headings = useMemo(() => Array.from(previewMarkdown.matchAll(/^#{2,3}\s+(.+)$/gm), (match) => match[1]), [previewMarkdown]);
-  function insert(before: string, after = "") { const target = textarea.current; const start = target?.selectionStart ?? draft.length; const end = target?.selectionEnd ?? start; setDraft(`${draft.slice(0, start)}${before}${draft.slice(start, end)}${after}${draft.slice(end)}`); requestAnimationFrame(() => textarea.current?.focus()); }
-  async function save() { if (!hash) { setStatus("找不到實體檔案版本；請以 pnpm dev 開啟本機工作台後再保存。"); return; } setSaving(true); try { const response = await fetch("/api/local/write", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: relativePath, content: draft, expectedHash: hash }) }); const result = await response.json(); if (!response.ok || !result.ok) throw new Error(result.error || "保存失敗"); setStatus("已寫入實體 Markdown 並建立備份；正在重新載入知識索引…"); setTimeout(() => location.reload(), 650); } catch (error) { setStatus(error instanceof Error ? error.message : "保存失敗"); } finally { setSaving(false); } }
-  function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); void save(); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") { event.preventDefault(); insert("**", "**"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") { event.preventDefault(); insert("*", "*"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); insert("[", "](https://)"); } }
+  function insert(before: string, after = "") { const target = textarea.current; const start = target?.selectionStart ?? draft.length; const end = target?.selectionEnd ?? start; setDraftValue(`${draft.slice(0, start)}${before}${draft.slice(start, end)}${after}${draft.slice(end)}`); requestAnimationFrame(() => textarea.current?.focus()); }
+  function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); void saveNow("manual"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") { event.preventDefault(); insert("**", "**"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") { event.preventDefault(); insert("*", "*"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); insert("[", "](https://)"); } }
   function onDrop(event: DragEvent<HTMLTextAreaElement>) { event.preventDefault(); const file = event.dataTransfer.files[0]; if (file?.type.startsWith("image/")) insert(`![${file.name}](./images/${file.name})`); }
-  return <div className="grid min-h-[64vh] gap-0 overflow-hidden rounded-md border border-slate-950/15 md:grid-cols-2"><section className="border-b border-slate-950/15 bg-slate-950 p-3 md:border-b-0 md:border-r"><div className="mb-2 flex flex-wrap gap-1"><button type="button" onClick={() => insert("**", "**")} aria-label="粗體"><Bold /></button><button type="button" onClick={() => insert("*", "*")} aria-label="斜體"><Italic /></button><button type="button" onClick={() => insert("[", "](https://)")} aria-label="連結"><Link /></button><button type="button" onClick={() => insert("\n| 欄位 | 內容 |\n|---|---|\n| | |\n")} aria-label="表格"><Table2 /></button><button type="button" onClick={() => insert("\n```java\n\n```\n")} aria-label="程式碼區塊"><Code2 /></button><button type="button" onClick={() => insert("\n```mermaid\ngraph TD\n  A[Start] --> B[Note]\n```\n")} aria-label="Mermaid 圖"><ImagePlus /></button><button type="button" onClick={() => void save()} disabled={saving || !hash} className="ml-auto inline-flex items-center gap-1"><Save />{saving ? "寫入中…" : "Ctrl+S 寫入檔案"}</button></div><textarea ref={textarea} value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={onKeyDown} onDrop={onDrop} onDragOver={(event) => event.preventDefault()} className="h-[56vh] w-full resize-none bg-transparent font-mono text-sm leading-6 text-slate-100 outline-none" aria-label="實體 Markdown 編輯器" /></section><section className="overflow-auto bg-[#fffdf7] p-5"><p className="section-label text-teal-800">PREVIEW · PHYSICAL MARKDOWN</p><p role="status" className="mt-2 text-xs leading-5 text-slate-600">{status}</p><div className="mt-3 flex gap-3"><aside className="w-36 shrink-0 text-xs text-slate-500">{headings.map((heading) => <p key={heading} className="mb-2">{heading}</p>)}</aside><article className="min-w-0 flex-1 prose prose-slate max-w-none"><WikiMarkdown markdown={previewMarkdown} onOpenNote={onOpenNote} /></article></div><p className="mt-6 rounded border border-amber-700/20 bg-amber-50 p-3 text-xs text-amber-950">拖放圖片只插入 `./images/檔名` 語法；請將實體圖片放入筆記相對應的 images 資料夾。Ctrl+S 會先比對磁碟版本、建立備份，然後寫回目前的 `.md` 檔案。</p></section></div>;
+  const statusIcon = phase === "saved" ? <Check className="h-3.5 w-3.5 text-teal-700" /> : phase === "saving" ? <CloudUpload className="h-3.5 w-3.5 animate-pulse text-teal-700" /> : phase === "conflict" || phase === "error" || phase === "unavailable" ? <AlertCircle className="h-3.5 w-3.5 text-amber-700" /> : null;
+  const statusTone = phase === "conflict" || phase === "error" || phase === "unavailable" ? "border-amber-700/25 bg-amber-50 text-amber-950" : phase === "saved" ? "border-teal-700/20 bg-teal-700/[0.06] text-teal-950" : "border-slate-950/10 bg-slate-950/[0.035] text-slate-700";
+
+  return <div className="grid min-h-[64vh] gap-0 overflow-hidden rounded-sm border border-slate-950/15 lg:grid-cols-2"><section className="border-b border-slate-950/15 bg-slate-950 p-3 lg:border-b-0 lg:border-r"><div className="mb-2 flex flex-wrap gap-1"><button type="button" onClick={() => insert("**", "**")} aria-label="粗體"><Bold /></button><button type="button" onClick={() => insert("*", "*")} aria-label="斜體"><Italic /></button><button type="button" onClick={() => insert("[", "](https://)")} aria-label="連結"><Link /></button><button type="button" onClick={() => insert("\n| 欄位 | 內容 |\n|---|---|\n| | |\n")} aria-label="表格"><Table2 /></button><button type="button" onClick={() => insert("\n```java\n\n```\n")} aria-label="程式碼區塊"><Code2 /></button><button type="button" onClick={() => insert("\n```mermaid\ngraph TD\n  A[Start] --> B[Note]\n```\n")} aria-label="Mermaid 圖"><ImagePlus /></button><button type="button" onClick={() => void saveNow("manual")} disabled={phase === "saving" || !hash} className="ml-auto inline-flex items-center gap-1"><Save />{phase === "saving" ? "寫入中…" : "Ctrl+S 立即保存"}</button></div><textarea ref={textarea} value={draft} onChange={(event) => setDraftValue(event.target.value)} onKeyDown={onKeyDown} onDrop={onDrop} onDragOver={(event) => event.preventDefault()} className="h-[56vh] w-full resize-none bg-transparent font-mono text-sm leading-6 text-slate-100 outline-none" aria-label="實體 Markdown 編輯器" /></section><section className="overflow-auto bg-[#fffdf7] p-5"><p className="section-label text-teal-800">PREVIEW · PHYSICAL MARKDOWN</p><div role="status" aria-live="polite" className={`mt-2 flex items-start gap-1.5 rounded-sm border px-2 py-1.5 text-xs leading-5 ${statusTone}`}>{statusIcon}<span>{status}</span>{phase === "conflict" && <button type="button" onClick={() => setReloadNonce((value) => value + 1)} className="ml-auto inline-flex shrink-0 items-center gap-1 font-bold text-amber-900 underline underline-offset-2"><RotateCcw className="h-3.5 w-3.5" />重新載入磁碟版本</button>}</div><div className="mt-3 flex gap-3"><aside className="hidden w-36 shrink-0 text-xs text-slate-500 sm:block">{headings.map((heading) => <p key={heading} className="mb-2">{heading}</p>)}</aside><article className="min-w-0 flex-1 prose prose-slate max-w-none"><WikiMarkdown markdown={previewMarkdown} onOpenNote={onOpenNote} /></article></div><p className="mt-6 rounded-sm border border-amber-700/20 bg-amber-50 p-3 text-xs text-amber-950">停止輸入約 1.2 秒後會自動保存至實體 `.md`；Ctrl+S 可立即保存。每次寫入都會比對磁碟版本並建立本機備份。拖放圖片只插入 `./images/檔名` 語法；請將實體圖片放入筆記相對應的 images 資料夾。</p></section></div>;
 }

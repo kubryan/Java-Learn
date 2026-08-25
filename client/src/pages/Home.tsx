@@ -34,6 +34,16 @@ import { guideForCategory } from "@/lib/bilingual";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getNoteRevisions, getRecentMarkdownChanges, summarizeRevisionDiff, syncNoteHistory, type NoteRevision } from "@/lib/note-history";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -149,7 +159,10 @@ export default function Home() {
   const [backupOpen, setBackupOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "backup");
   const [gitOpen, setGitOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "git");
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "editor");
+  const [editorDirty, setEditorDirty] = useState(false);
+  const [editorHasSaved, setEditorHasSaved] = useState(false);
+  const [editorCloseConfirm, setEditorCloseConfirm] = useState(false);
   const [noteRevisions, setNoteRevisions] = useState<NoteRevision[]>([]);
   const [selectedRevisionId, setSelectedRevisionId] = useState("");
   const [historyMessage, setHistoryMessage] = useState("");
@@ -427,7 +440,7 @@ export default function Home() {
             </div>
           </button>
           <div className="flex shrink-0 gap-2 md:hidden"><button type="button" onClick={() => setBackupOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-4 w-4" /></button><button type="button" onClick={() => setGitOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-4 w-4" /></button><button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button></div>
-          <div className="hidden items-center gap-3 text-xs text-slate-600 md:flex">
+          <div className="workbench-tools hidden items-center gap-3 text-xs text-slate-600 md:flex">
             <span className="inline-flex overflow-hidden rounded-md border border-slate-950/10 bg-white/65"><button type="button" onClick={() => setTheme?.("light")} className={`px-2 py-1.5 ${theme === "light" ? "bg-teal-700 text-white" : ""}`}>☀ Light</button><button type="button" onClick={() => setTheme?.("dark")} className={`px-2 py-1.5 ${theme === "dark" ? "bg-teal-700 text-white" : ""}`}>🌙 Dark</button><button type="button" onClick={() => setTheme?.("system")} className={`px-2 py-1.5 ${theme === "system" ? "bg-teal-700 text-white" : ""}`}>🖥 System</button></span>
             <button type="button" onClick={() => setGraphOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-3.5 w-3.5" />知識圖</button>
             <button type="button" onClick={() => setBackupOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-3.5 w-3.5" />設定</button>
@@ -464,7 +477,8 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editorOpen} onOpenChange={setEditorOpen}><DialogContent className="max-h-[calc(100vh-2rem)] max-w-7xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0"><DialogHeader className="border-b border-slate-950/10 px-6 pb-4 pt-6"><DialogTitle className="font-serif text-2xl font-bold">Markdown 編輯工作台 · 實體檔案模式</DialogTitle><DialogDescription>Ctrl+S 會先比對磁碟版本、建立備份，再寫回目前的 `client/src/content/` Markdown；保存後會重新載入索引。</DialogDescription></DialogHeader><div className="p-4"><MarkdownEditor note={selectedNote} onOpenNote={(note) => { setEditorOpen(false); openWikiNote(note); }} /></div></DialogContent></Dialog>
+      <Dialog open={editorOpen} onOpenChange={(next) => { if (!next && editorDirty) { setEditorCloseConfirm(true); return; } setEditorOpen(next); if (!next && editorHasSaved) window.setTimeout(() => location.reload(), 140); }}><DialogContent className="max-h-[calc(100vh-2rem)] max-w-7xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0"><DialogHeader className="border-b border-slate-950/10 px-6 pb-4 pt-6"><DialogTitle className="font-serif text-2xl font-bold">Markdown 編輯工作台 · 實體檔案模式</DialogTitle><DialogDescription>停止輸入約 1.2 秒後會安全自動保存；Ctrl+S 可立即保存。每次寫入都會比對磁碟版本、建立備份，關閉工作台後才重新載入全域索引。</DialogDescription></DialogHeader><div className="p-4"><MarkdownEditor note={selectedNote} onDirtyChange={setEditorDirty} onSaved={() => setEditorHasSaved(true)} onOpenNote={(note) => { setEditorOpen(false); openWikiNote(note); }} /></div></DialogContent></Dialog>
+      <AlertDialog open={editorCloseConfirm} onOpenChange={setEditorCloseConfirm}><AlertDialogContent className="border-slate-950/20 bg-[#fffdf7] text-slate-950"><AlertDialogHeader><AlertDialogTitle>尚有尚未保存的 Markdown 內容</AlertDialogTitle><AlertDialogDescription>再等候約 1.2 秒可讓自動保存完成，或按下「放棄未保存內容」關閉工作台。這不會刪除先前已寫入實體檔的版本。</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>繼續編輯</AlertDialogCancel><AlertDialogAction onClick={() => { setEditorCloseConfirm(false); setEditorDirty(false); setEditorOpen(false); if (editorHasSaved) window.setTimeout(() => location.reload(), 140); }} className="bg-amber-700 text-white hover:bg-amber-800">放棄未保存內容</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 
       <Dialog open={quickSearchOpen} onOpenChange={setQuickSearchOpen}>
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-3xl gap-0 overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
@@ -698,7 +712,7 @@ export default function Home() {
                 {completed.includes(selectedNote.slug) ? "已完成" : "標記完成"}
               </button>
               <button type="button" onClick={() => setHistoryOpen(true)} className="completion-stamp"><History className="h-4 w-4" />修改歷史</button>
-              <button type="button" onClick={() => setEditorOpen(true)} className="completion-stamp"><FileText className="h-4 w-4" />編輯實體 Markdown</button>
+              <button type="button" onClick={() => { setEditorDirty(false); setEditorHasSaved(false); setEditorOpen(true); }} className="completion-stamp"><FileText className="h-4 w-4" />編輯實體 Markdown</button>
               <button type="button" onClick={() => toggleFavorite(selectedNote.slug)} className={`completion-stamp ${favorites.includes(selectedNote.slug) ? "completion-stamp-done" : ""}`}><Star className={`h-4 w-4 ${favorites.includes(selectedNote.slug) ? "fill-current" : ""}`} />{favorites.includes(selectedNote.slug) ? "已收藏" : "收藏"}</button>
             </div>
 
@@ -764,7 +778,7 @@ export default function Home() {
           </section>
         </main>
 
-        <aside className="space-y-4 xl:sticky xl:top-5 xl:h-fit">
+        <aside className="reference-drawer space-y-4 xl:sticky xl:top-5 xl:h-fit">
           <section className="workbench-panel p-4">
             <div className="mb-3 flex items-center gap-2">
               <span className="coordinate-chip">{String(selectedNote.order).padStart(2, "0")}</span>
