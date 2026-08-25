@@ -405,3 +405,58 @@
   color: #fff1bd !important;
   border-color: rgba(251, 191, 36, .28) !important;
 }
+
+.markdown-editor-source,
+.markdown-editor-preview {
+  min-height: 64vh;
+}
+.markdown-editor-source {
+  overflow: hidden;
+}
+.markdown-editor-preview {
+  scrollbar-gutter: stable;
+}
+.markdown-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: .45rem;
+  border: 1px solid rgba(15, 118, 110, .28);
+  border-radius: 999px;
+  padding: .15rem .45rem;
+  color: #0f766e;
+  font-size: .58rem;
+  letter-spacing: .08em;
+  vertical-align: middle;
+}
+.dark .markdown-sync-badge {
+  border-color: rgba(126, 230, 216, .42);
+  color: #7ee6d8;
+}
+
+@media (min-width: 1024px) {
+  .markdown-editor {
+    height: min(64vh, calc(100vh - 14rem));
+    min-height: 0;
+  }
+  .markdown-editor-source,
+  .markdown-editor-preview {
+    height: 100%;
+    min-height: 0;
+  }
+  .markdown-editor-source {
+    display: flex;
+    flex-direction: column;
+  }
+  .markdown-editor-source > div:first-child {
+    flex: 0 0 auto;
+  }
+  .markdown-editor-textarea {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    overflow: auto;
+  }
+  .markdown-editor-preview {
+    overflow: auto;
+  }
+}
