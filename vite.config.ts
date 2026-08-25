@@ -1,9 +1,11 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { execFile as execFileCallback } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { promisify } from "node:util";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
@@ -16,6 +18,7 @@ const PROJECT_ROOT = import.meta.dirname;
 const LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");
 const MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024; // 1MB per log file
 const TRIM_TARGET_BYTES = Math.floor(MAX_LOG_SIZE_BYTES * 0.6); // Trim to 60% to avoid constant re-trimming
+const execFile = promisify(execFileCallback);
 
 type LogSource = "browserConsole" | "networkRequests" | "sessionReplay";
 
@@ -228,7 +231,36 @@ function vitePluginLocalKnowledgeManager(): Plugin {
   }); } };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy(), vitePluginLocalKnowledgeManager()];
+type GitChange = { path: string; status: string };
+
+function vitePluginLocalGitWorkspace(): Plugin {
+  const contentRoot = path.join(PROJECT_ROOT, "client", "src", "content");
+  const localAddresses = ["127.0.0.1", "::1", "::ffff:127.0.0.1"];
+  const body = (req: any) => new Promise<any>((resolve, reject) => { let value = ""; req.on("data", (chunk: Buffer) => value += chunk); req.on("end", () => { try { resolve(JSON.parse(value || "{}")); } catch (error) { reject(error); } }); });
+  const runGit = async (args: string[]) => { const result = await execFile("git", args, { cwd: PROJECT_ROOT, maxBuffer: 1024 * 1024 }); return String(result.stdout).trim(); };
+  const optionalGit = async (args: string[]) => { try { return await runGit(args); } catch { return ""; } };
+  const isRepository = async () => (await optionalGit(["rev-parse", "--is-inside-work-tree"])) === "true";
+  const safeMarkdownPath = (value: unknown) => { const relative = String(value || "").replace(/\\/g, "/"); if (!relative || !relative.endsWith(".md") || relative.includes("\0")) throw new Error("只允許選取 content 目錄內的 Markdown 筆記。"); const target = path.resolve(contentRoot, relative); if (!target.startsWith(`${contentRoot}${path.sep}`)) throw new Error("不允許操作 content 目錄以外的檔案。"); return path.relative(PROJECT_ROOT, target).replace(/\\/g, "/"); };
+  const selectedPaths = (value: unknown) => { if (!Array.isArray(value) || !value.length || value.length > 40) throw new Error("請選擇 1 至 40 個 Markdown 檔案。 "); return Array.from(new Set(value.map(safeMarkdownPath))); };
+  const parseChanges = (status: string): GitChange[] => status.split("\0").filter(Boolean).map((line) => ({ status: line.slice(0, 2), path: line.slice(3) })).filter((change) => change.path.startsWith("client/src/content/") && change.path.endsWith(".md")).map((change) => ({ ...change, path: change.path.replace(/^client\/src\/content\//, "") }));
+  const info = async () => { const repository = await isRepository(); if (!repository) return { repository: false, branch: "", remote: "", userName: "", userEmail: "", changes: [] as GitChange[] }; const [branch, remote, userName, userEmail, status] = await Promise.all([optionalGit(["branch", "--show-current"]), optionalGit(["remote", "get-url", "origin"]), optionalGit(["config", "user.name"]), optionalGit(["config", "user.email"]), optionalGit(["status", "--porcelain=v1", "-z", "--untracked-files=all"])]); return { repository: true, branch, remote, userName, userEmail, changes: parseChanges(status) }; };
+  return { name: "local-git-workspace", configureServer(server) { server.middlewares.use("/api/git", async (req, res) => {
+    if (req.socket.remoteAddress && !localAddresses.includes(req.socket.remoteAddress)) { res.writeHead(403); res.end("Local access only"); return; }
+    try {
+      const input = req.method === "GET" ? {} : await body(req);
+      if (req.url === "/status" && req.method === "GET") { const current = await info(); res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: true, ...current })); return; }
+      if (!(await isRepository())) throw new Error("此 Windows 專案尚未初始化為 Git 儲存庫。請先完成本機 Git 設定。 ");
+      if (req.url === "/diff" && req.method === "POST") { const gitPath = safeMarkdownPath(input.path); const [unstaged, staged] = await Promise.all([optionalGit(["diff", "--no-ext-diff", "--", gitPath]), optionalGit(["diff", "--cached", "--no-ext-diff", "--", gitPath])]); const workingFile = path.resolve(PROJECT_ROOT, gitPath); const untrackedPreview = !unstaged && !staged && fs.existsSync(workingFile) ? `--- /dev/null\n+++ b/${gitPath}\n@@ new Markdown file @@\n${fs.readFileSync(workingFile, "utf8").split(/\r?\n/).map((line) => `+${line}`).join("\n")}` : ""; res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: true, unstaged: unstaged || untrackedPreview, staged })); return; }
+      if (req.url === "/stage" && req.method === "POST") { const paths = selectedPaths(input.paths); await runGit(["add", "--", ...paths]); }
+      else if (req.url === "/commit" && req.method === "POST") { if (input.confirm !== true) throw new Error("提交需要明確確認。 "); const paths = selectedPaths(input.paths); const message = String(input.message || "").trim(); if (message.length < 5 || message.length > 120 || /[\r\n]/.test(message)) throw new Error("提交訊息需為 5 至 120 個字，且只能使用單行。 "); await runGit(["add", "--", ...paths]); const staged = (await runGit(["diff", "--cached", "--name-only"])).split("\n").filter(Boolean); if (!staged.length) throw new Error("沒有可提交的變更。 "); const allowed = new Set(paths); if (staged.some((file) => !allowed.has(file))) throw new Error("暫存區含有未選取的檔案；請先在 Git 工具中整理暫存區。 "); await runGit(["commit", "-m", message]); }
+      else if (req.url === "/push" && req.method === "POST") { if (input.confirm !== true) throw new Error("推送需要明確確認。 "); const current = await info(); if (!current.remote) throw new Error("找不到 origin 遠端；請先設定 GitHub 遠端。 "); if (!current.branch) throw new Error("目前不在可推送的 Git 分支上。 "); await runGit(["push", "origin", current.branch]); }
+      else { res.writeHead(404); res.end(); return; }
+      const current = await info(); res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: true, ...current }));
+    } catch (error) { const detail = error instanceof Error ? error.message : String(error); res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: false, error: detail })); }
+  }); } };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy(), vitePluginLocalKnowledgeManager(), vitePluginLocalGitWorkspace()];
 
 export default defineConfig({
   plugins,

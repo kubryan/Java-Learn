@@ -81,3 +81,20 @@ summary: 將物品註冊為可被遊戲辨識的資源。
 頁首的「知識圖」會讀取所有 Markdown 中可解析的 `[[...]]`，自動建立節點與連線，不需另外寫圖譜設定。圖中可拖曳節點、拖曳空白處平移、以滑鼠滾輪或 `＋／－` 縮放，並點選節點回到原始筆記。若某篇筆記尚未出現在圖上，請先讓它連到另一篇存在的筆記，或讓其他筆記以 `[[它的標題]]` 指向它。
 
 > 「新增知識」知識總覽功能仍是瀏覽器 IndexedDB 的個人摘要；需要長期保存、全文搜尋或 Git 版控的內容，請用知識樹建立 `.md`，或在文章中使用「編輯實體 Markdown」。
+
+## 用 Git 版控實體 Markdown
+
+從本機網站頁首選擇「**Git**」，即可開啟 Git 工作台。它只會列出 `client\src\content\` 裡的 `.md` 變更，讓你逐檔檢查 diff、選取這次要提交的筆記，再輸入 commit 訊息。瀏覽器草稿、IndexedDB、`local-backups\`、網站介面和其他未選取檔案不會被 Git 工作台自動加入。
+
+目前 `C:\think\JavaBase` 尚未初始化為 Git 儲存庫。請在 PowerShell 進入專案資料夾後，確認你要使用自己的 GitHub 帳號與遠端網址，再執行下列設定一次：
+
+```powershell
+cd C:\think\JavaBase
+git init
+git branch -M main
+git remote add origin https://github.com/kubryan/Java-Learn.git
+git config user.name "你的 GitHub 顯示名稱"
+git config user.email "你的 GitHub 提交信箱"
+```
+
+完成設定、重新執行 `pnpm dev` 後按「重新檢查」，就能看到 Markdown 變更。`Commit` 只建立本機版本；`Push` 會在另一個確認視窗中才推送目前分支到 `origin`。若 GitHub 要求登入，請在 Windows 的 Git Credential Manager 或 GitHub CLI 完成登入後再 Push。若這個遠端已經有不同歷史，請先以命令列檢查並整合歷史，**不要**在工作台中強制推送。

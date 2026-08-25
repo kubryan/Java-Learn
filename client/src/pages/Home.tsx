@@ -11,6 +11,7 @@ import {
   Database,
   FileText,
   Gamepad2,
+  GitBranch,
   History,
   Languages,
   Network,
@@ -24,6 +25,7 @@ import {
 import { categories, notes, searchNotes, type Note } from "@/lib/notes";
 import { KnowledgeTree } from "@/components/KnowledgeTree";
 import { KnowledgeGraph } from "@/components/KnowledgeGraph";
+import { GitWorkspace } from "@/components/GitWorkspace";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { WikiMarkdown } from "@/components/WikiMarkdown";
 import { guideForCategory } from "@/lib/bilingual";
@@ -142,6 +144,7 @@ export default function Home() {
   const [knowledgeTags, setKnowledgeTags] = useState<KnowledgeTag[]>([]);
   const [tagOpen, setTagOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "graph");
+  const [gitOpen, setGitOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "git");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [noteRevisions, setNoteRevisions] = useState<NoteRevision[]>([]);
@@ -420,10 +423,11 @@ export default function Home() {
               </h1>
             </div>
           </button>
-          <button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900 md:hidden" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button>
+          <div className="flex shrink-0 gap-2 md:hidden"><button type="button" onClick={() => setGitOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-4 w-4" /></button><button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button></div>
           <div className="hidden items-center gap-3 text-xs text-slate-600 md:flex">
             <span className="inline-flex overflow-hidden rounded-md border border-slate-950/10 bg-white/65"><button type="button" onClick={() => setTheme?.("light")} className={`px-2 py-1.5 ${theme === "light" ? "bg-teal-700 text-white" : ""}`}>☀ Light</button><button type="button" onClick={() => setTheme?.("dark")} className={`px-2 py-1.5 ${theme === "dark" ? "bg-teal-700 text-white" : ""}`}>🌙 Dark</button><button type="button" onClick={() => setTheme?.("system")} className={`px-2 py-1.5 ${theme === "system" ? "bg-teal-700 text-white" : ""}`}>🖥 System</button></span>
             <button type="button" onClick={() => setGraphOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-3.5 w-3.5" />知識圖</button>
+            <button type="button" onClick={() => setGitOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-3.5 w-3.5" />Git</button>
             <button type="button" onClick={openQuickSearch} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟快速全文搜尋">
               <Search className="h-3.5 w-3.5" />快速搜尋 <kbd className="rounded border border-slate-950/10 bg-[#f8f4e9] px-1 font-mono text-[10px]">Ctrl K</kbd>
             </button>
@@ -432,6 +436,8 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      <GitWorkspace open={gitOpen} onOpenChange={setGitOpen} />
 
       <Dialog open={graphOpen} onOpenChange={setGraphOpen}>
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-6xl gap-0 overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
