@@ -435,7 +435,7 @@
 
 @media (min-width: 1024px) {
   .markdown-editor {
-    height: min(64vh, calc(100vh - 14rem));
+    height: min(78vh, calc(100vh - 12rem));
     min-height: 0;
   }
   .markdown-editor-source,
