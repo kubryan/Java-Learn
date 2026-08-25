@@ -6,6 +6,7 @@ import { bilingualSearchTerms } from "./bilingual";
 export type Note = {
   title: string;
   slug: string;
+  aliases: string[];
   category: string;
   order: number;
   level: string;
@@ -33,15 +34,32 @@ const noteModules = import.meta.glob("../content/**/*.md", {
   query: "?raw",
 }) as Record<string, string>;
 
+function categoryTags(category: string) {
+  if (["Java 基礎", "物件導向", "桌面工具", "後端 API"].includes(category)) return ["Java"];
+  if (category === "Python 基礎") return ["Python"];
+  if (["Minecraft 共通", "Fabric", "NeoForge"].includes(category)) return ["Minecraft"];
+  if (category === "Fabric") return ["Fabric"];
+  if (category === "NeoForge") return ["NeoForge"];
+  return [];
+}
+
 function parseFrontmatter(raw: string) {
   const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (!match) return { metadata: {}, body: raw.trim() };
 
+  let listKey = "";
   const metadata = match[1].split(/\r?\n/).reduce<Record<string, string>>((result, line) => {
+    const listItem = line.match(/^\s*-\s+(.+)$/);
+    if (listItem && listKey) {
+      result[listKey] = [result[listKey], listItem[1].trim().replace(/^['"]|['"]$/g, "")].filter(Boolean).join(",");
+      return result;
+    }
+
     const separator = line.indexOf(":");
     if (separator === -1) return result;
     const key = line.slice(0, separator).trim();
     const value = line.slice(separator + 1).trim().replace(/^['"]|['"]$/g, "");
+    listKey = value ? "" : key;
     result[key] = value;
     return result;
   }, {});
@@ -53,13 +71,17 @@ export const notes: Note[] = Object.entries(noteModules)
   .map(([filePath, raw]) => {
     const { metadata, body } = parseFrontmatter(raw);
     const fallbackSlug = filePath.split("/").pop()?.replace(/\.md$/, "") ?? "untitled";
+    const category = metadata.category ?? "開始使用";
+    const frontmatterTags = (metadata.tags ?? "").split(",").map((tag) => tag.trim()).filter(Boolean);
+    const aliases = (metadata.aliases ?? "").split(",").map((alias) => alias.trim()).filter(Boolean);
     return {
       title: metadata.title ?? fallbackSlug,
       slug: metadata.slug ?? fallbackSlug,
-      category: metadata.category ?? "開始使用",
+      aliases,
+      category,
       order: Number(metadata.order ?? 999),
       level: metadata.level ?? "入門",
-      tags: (metadata.tags ?? "").split(",").map((tag) => tag.trim()).filter(Boolean),
+      tags: Array.from(new Set([...frontmatterTags, ...categoryTags(category)])),
       summary: metadata.summary ?? "尚未加入摘要。",
       body,
       path: filePath.replace("../content/", "content/"),
@@ -67,10 +89,12 @@ export const notes: Note[] = Object.entries(noteModules)
   })
   .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title, "zh-Hant"));
 
-export function searchNotes(query: string, category: string) {
+export function searchNotes(query: string, category: string, selectedTag = "") {
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  const normalizedTag = selectedTag.trim().toLocaleLowerCase();
   return notes.filter((note) => {
     const matchesCategory = category === "全部" || note.category === category;
+    const matchesTag = !normalizedTag || note.tags.some((tag) => tag.toLocaleLowerCase() === normalizedTag);
     const haystack = [
       note.title,
       note.summary,
@@ -80,6 +104,6 @@ export function searchNotes(query: string, category: string) {
     ]
       .join(" ")
       .toLocaleLowerCase();
-    return matchesCategory && (!normalizedQuery || haystack.includes(normalizedQuery));
+    return matchesCategory && matchesTag && (!normalizedQuery || haystack.includes(normalizedQuery));
   });
 }

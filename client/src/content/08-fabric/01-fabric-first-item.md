@@ -1,6 +1,7 @@
 ---
 title: Fabric 分流：從第一個物品理解註冊
 slug: fabric-first-item
+aliases: Fabric 26.2, Fabric 第一個物品
 category: Fabric
 order: 81
 level: Minecraft 共通後

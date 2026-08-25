@@ -48,27 +48,40 @@
   }
   .workbench-panel { @apply rounded-md border border-slate-950/15 bg-[#fffdf7]/90 shadow-[0_12px_28px_rgba(23,38,58,0.055)]; }
   .section-label { @apply font-mono text-[10px] font-semibold tracking-[0.16em] text-slate-500; }
-  .wordmark-lockup { @apply flex items-baseline gap-1 font-serif text-[1.18rem] font-black leading-none tracking-[0.06em] text-slate-950; }
-  .wordmark-java { @apply font-mono text-[0.64em] font-semibold tracking-[0.18em] text-teal-800; }
-  .wordmark-divider { @apply -mx-0.5 font-mono text-[0.72em] text-amber-700; }
+  .wordmark-lockup { @apply flex items-baseline gap-1 font-serif text-[1.2rem] font-black leading-none tracking-[0.045em] text-slate-950; }
+  .wordmark-java { @apply font-mono text-[0.8em] font-bold tracking-[0.13em] text-teal-800; }
+  .wordmark-divider { @apply -mx-0.5 font-mono text-[0.78em] text-amber-700; }
   .verification-dot { @apply h-2 w-2 rounded-full bg-teal-600 shadow-[0_0_0_4px_rgba(15,157,138,0.13)]; }
   .nav-row { @apply flex w-full items-center gap-2 rounded-md px-2.5 py-2.5 text-sm text-slate-700 transition duration-150 hover:bg-slate-900/[0.055] hover:text-slate-950 active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-teal-600; }
   .nav-row-active { @apply bg-teal-700 text-[#f8f4e9] shadow-sm hover:bg-teal-800 hover:text-white; }
   .nav-row-active span { @apply text-[#f8f4e9]; }
-  .hero-workbench { @apply relative min-h-[330px] rounded-md border border-slate-950/15 bg-[#dce3de] shadow-[0_15px_32px_rgba(23,38,58,0.09)]; }
-  .hero-photo { @apply absolute inset-0 h-full w-full object-cover object-center; }
-  .hero-copy { @apply relative min-h-[330px] max-w-[630px] border-r border-slate-950/10 bg-[#fffdf7]/[0.95] p-6 shadow-[16px_0_42px_rgba(23,38,58,0.08)] sm:p-9; }
+  .hero-workbench { @apply relative min-h-[330px] rounded-md border border-slate-950/15 bg-[#e8eee9] shadow-[0_15px_32px_rgba(23,38,58,0.09)]; }
+  .hero-schematic { position: absolute; inset: 0; overflow: hidden; background-color: #e8eee9; background-image: linear-gradient(rgba(15,118,110,.11) 1px, transparent 1px), linear-gradient(90deg, rgba(15,118,110,.11) 1px, transparent 1px), linear-gradient(35deg, transparent 47%, rgba(23,38,58,.11) 47% 48%, transparent 48% 100%), linear-gradient(145deg, transparent 53%, rgba(15,118,110,.13) 53% 54%, transparent 54% 100%); background-size: 24px 24px, 24px 24px, 340px 340px, 440px 440px; }
+  .hero-schematic::before, .hero-schematic::after { content: ""; position: absolute; border: 1px solid rgba(15,118,110,.46); border-radius: 999px; }
+  .hero-schematic::before { width: 330px; height: 330px; right: 8%; top: -88px; }
+  .hero-schematic::after { width: 160px; height: 160px; right: 25%; bottom: -52px; border-color: rgba(23,38,58,.26); }
+  .schematic-code, .schematic-note, .schematic-axis { position: absolute; font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: .08em; color: rgba(15,118,110,.82); }
+  .schematic-code { right: 6%; top: 28%; font-size: 10px; transform: rotate(-24deg); }
+  .schematic-note { right: 17%; bottom: 22%; font-size: 9px; color: rgba(23,38,58,.72); }
+  .schematic-axis { right: -3%; top: 48%; font-size: 9px; transform: rotate(90deg); transform-origin: center; }
+  .schematic-orbit { position: absolute; display: block; width: 11px; height: 11px; border: 2px solid #0f766e; background: #fffdf7; }
+  .schematic-orbit-one { right: 31%; top: 25%; }
+  .schematic-orbit-two { right: 16%; bottom: 27%; border-color: #a16207; }
+  .hero-copy { @apply relative min-h-[330px] max-w-[630px] border-r border-slate-950/10 bg-[#fffdf7]/[0.96] p-6 shadow-[16px_0_42px_rgba(23,38,58,0.08)] sm:p-9; }
   .hero-copy::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .42; background-image: linear-gradient(90deg, transparent 0 94%, rgba(23,38,58,.08) 94% 95%, transparent 95%), linear-gradient(rgba(23,38,58,.06) 1px, transparent 1px); background-size: 100% 100%, 100% 32px; }
   .hero-coordinate-rail { @apply absolute bottom-3 right-3 z-10 hidden items-center gap-2 rounded-sm border border-white/60 bg-slate-950/80 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.12em] text-[#f8f4e9] sm:flex; }
   .hero-coordinate-rail i { @apply h-px w-3 bg-teal-300; }
   .primary-stamp { @apply inline-flex items-center gap-2 rounded-sm bg-teal-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition duration-150 hover:bg-teal-800 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2; }
   .route-module-grid { @apply relative; }
+  .route-module-grid::before { content: ""; position: absolute; z-index: 0; top: 39px; left: 8%; right: 8%; border-top: 1px dashed rgba(15,118,110,.72); }
   .track-card { @apply relative overflow-hidden rounded-md border border-slate-950/15 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_25px_rgba(23,38,58,0.14)] focus-visible:ring-2 focus-visible:ring-teal-600; }
   .track-card::before { content: ""; position: absolute; z-index: 5; left: 0; top: 0; width: 100%; height: 5px; background: repeating-linear-gradient(90deg, #0f9d8a 0 14px, transparent 14px 21px); opacity: .95; }
-  .track-card:not(:last-child)::after { content: ""; position: absolute; z-index: 10; top: 44%; right: -17px; width: 16px; height: 1px; background: #0f9d8a; box-shadow: 0 0 0 3px rgba(248,244,233,.9); }
+  .track-card:not(:last-child)::after { content: ""; position: absolute; z-index: 10; top: 39px; right: -17px; width: 16px; height: 1px; background: #0f766e; box-shadow: 0 0 0 3px rgba(248,244,233,.94); }
   .track-card:not(:last-child)::selection { background: transparent; }
   .track-card-image { @apply absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.035]; }
   .route-coordinate { @apply rounded-sm border border-slate-900/15 bg-[#fbf7ee]/95 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.08em] text-slate-700; }
+  .route-anchor { @apply inline-flex items-center gap-1 rounded-sm border border-teal-800/25 bg-[#fffdf7]/95 px-1.5 py-1 font-mono text-[9px] font-bold tracking-[0.06em] text-teal-900; }
+  .route-anchor i { @apply h-px w-3 bg-teal-700; }
   .route-status { @apply rounded-sm bg-teal-700/[0.1] px-1.5 py-1 font-mono text-[9px] font-semibold tracking-[0.06em] text-teal-900; }
   .completion-stamp { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-sm border border-teal-800 px-3 py-2 text-xs font-bold text-teal-800 transition duration-150 hover:bg-teal-700/10 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-teal-600; }
   .completion-stamp-done { @apply border-teal-700 bg-teal-700 text-white hover:bg-teal-800; }
@@ -80,6 +93,9 @@
   .reading-paper h3 { @apply mt-7 text-xl; }
   .reading-paper p { @apply my-4; }
   .reading-paper a { @apply font-medium text-teal-800 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-950; }
+  .reading-paper .wiki-link { @apply rounded-sm border-b border-dashed border-teal-700/55 bg-teal-700/[0.09] px-1 font-semibold no-underline transition duration-150 hover:border-teal-900 hover:bg-teal-700/[0.16] hover:text-teal-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2; }
+  .reading-paper .wiki-link::before { content: "wiki"; @apply mr-1 font-mono text-[0.62em] font-semibold uppercase tracking-[0.08em] text-teal-800/70; }
+  .reading-paper .wiki-link-missing { @apply cursor-help rounded-sm border-b border-dashed border-amber-700/55 bg-amber-300/15 px-1 font-medium text-amber-900; }
   .reading-paper code { @apply rounded-sm bg-slate-900/[0.075] px-1.5 py-0.5 font-mono text-[0.84em] font-medium text-slate-800; }
   .reading-paper pre { @apply overflow-x-auto rounded-md border border-slate-950/15 bg-slate-950 p-4 shadow-inner; }
   .reading-paper pre code { @apply bg-transparent p-0 text-sm font-normal leading-7 text-slate-100; }
@@ -93,6 +109,23 @@
   .tag-chip { @apply rounded-sm border border-teal-700/20 bg-teal-700/[0.07] px-2 py-1 font-mono text-[10px] font-medium text-teal-900; }
   .locator-row { @apply flex w-full gap-2 rounded-sm px-2 py-1.5 text-left text-xs leading-5 text-slate-600 transition hover:bg-teal-700/[0.07] hover:text-teal-900 focus-visible:ring-2 focus-visible:ring-teal-600; }
   .locator-row span:first-child { @apply shrink-0 font-mono text-[10px] text-teal-800; }
+  .graph-workbench { @apply rounded-md border border-slate-950/15 bg-[#fffdf7] p-3 shadow-inner sm:p-4; }
+  .graph-toolbar { @apply mb-3 flex flex-wrap items-start justify-between gap-3; }
+  .graph-controls { @apply inline-flex overflow-hidden rounded-md border border-slate-950/15 bg-white shadow-sm; }
+  .graph-controls button { @apply grid h-8 w-9 place-items-center border-r border-slate-950/10 text-slate-700 transition last:border-r-0 hover:bg-teal-700 hover:text-white focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-teal-600; }
+  .graph-canvas-wrap { @apply relative overflow-hidden rounded-md border border-slate-950/15 bg-[#edf2ed]; }
+  .graph-canvas { @apply block h-auto w-full touch-none cursor-grab active:cursor-grabbing; }
+  .graph-edge { stroke: rgba(15, 118, 110, 0.38); stroke-width: 2; stroke-dasharray: 4 6; transition: stroke 150ms ease-out, stroke-width 150ms ease-out; }
+  .graph-edge-active { stroke: #0f766e; stroke-width: 3.5; stroke-dasharray: none; }
+  .graph-node { cursor: grab; outline: none; }
+  .graph-node:focus-visible circle:first-child { stroke: #0f9d8a; stroke-width: 5; }
+  .graph-node-dimmed { opacity: 0.44; }
+  .graph-node-active circle:first-child { filter: drop-shadow(0 5px 8px rgba(15, 118, 110, 0.32)); }
+  .graph-node-order { font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; }
+  .graph-node-degree { font-family: "IBM Plex Mono", monospace; font-size: 7px; font-weight: 600; letter-spacing: 0.06em; }
+  .graph-node-label { fill: #17263a; font-family: "Noto Sans TC", sans-serif; font-size: 11px; font-weight: 700; paint-order: stroke; stroke: #fffdf7; stroke-width: 4px; stroke-linejoin: round; }
+  .graph-move-hint { @apply pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-sm border border-slate-950/15 bg-[#fffdf7]/95 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.08em] text-slate-600; }
+  .graph-footer { @apply mt-3 flex flex-wrap justify-between gap-2 font-mono text-[10px] font-semibold tracking-[0.07em] text-teal-800; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -109,4 +142,22 @@
   .hero-copy { min-height: 330px; max-width: 92%; }
   .reading-paper { font-size: 0.95rem; }
   .track-card:not(:last-child)::after { display: none; }
+  .route-module-grid::before { display: none; }
+  .hero-schematic::before { right: -45%; }
+  .schematic-code, .schematic-axis { display: none; }
 }
+
+.dark .blueprint-shell { background: #101923; color: #e7edf2; background-image: linear-gradient(rgba(94,234,212,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(94,234,212,.06) 1px, transparent 1px); }
+.dark .blueprint-shell .bg-\[\#f8f4e9\], .dark .blueprint-shell .bg-\[\#fffdf7\], .dark .blueprint-shell .reading-paper, .dark .blueprint-shell .hero-copy { background-color: #172330 !important; color: #e7edf2 !important; }
+.dark .blueprint-shell .text-slate-950, .dark .blueprint-shell .text-slate-700, .dark .blueprint-shell .text-slate-600 { color: #d7e2ea !important; }
+.dark .blueprint-shell pre, .dark .blueprint-shell code { background-color: #071018; color: #d8f7ef; }
+.dark .blueprint-shell header { background: rgba(16,25,35,.94) !important; }
+.dark body, .dark #root { background: #101923; color: #e7edf2; }
+.dark .blueprint-shell .bg-white, .dark .blueprint-shell .bg-white\/70, .dark .blueprint-shell .bg-white\/65, .dark .blueprint-shell .workbench-panel, .dark .blueprint-shell .border-slate-950\/10 { background-color: #172330 !important; color: #e7edf2 !important; }
+.dark .blueprint-shell .text-slate-500, .dark .blueprint-shell .text-slate-400, .dark .blueprint-shell .text-teal-950, .dark .blueprint-shell .text-slate-700 { color: #c9d8e4 !important; }
+.dark .blueprint-shell button:not(.bg-teal-700), .dark .blueprint-shell input, .dark .blueprint-shell textarea { color: #e7edf2; }
+.dark .blueprint-shell .bg-teal-700 { color: #f6fffd !important; }
+.dark .blueprint-shell .hover\:bg-teal-700\/\[\.07\]:hover { background-color: rgba(94, 234, 212, .12) !important; }
+.dark .blueprint-shell ::selection { background: #f4c95d; color: #071018; text-shadow: none; }
+.dark .blueprint-shell pre::selection, .dark .blueprint-shell code::selection { background: #5eead4; color: #071018; }
+.dark .blueprint-shell .bg-slate-950 ::selection { background: #f4c95d; color: #071018; }

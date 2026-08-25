@@ -12,7 +12,7 @@ summary: 先用中文建立理解，再用英文術語連上原始文件；這�
 
 程式語言的語法、函式與錯誤訊息幾乎都使用英文。你不需要先把英文學到很強才開始寫程式；更有效的方法是每次學一個概念，就同時記住它在英文文件中的名字。這個網站會採用「**中文解釋 + English term + original code**」的節奏。
 
-> **Read the explanation in Chinese, recognize the term in English, then find it in code.**
+> **Read the explanation in Chinese, recognize the term in English, then find it in code.**  
 > 先讀中文解釋，再認出英文術語，最後在程式碼中找到它。
 
 ## 共用基礎術語 / Shared foundations

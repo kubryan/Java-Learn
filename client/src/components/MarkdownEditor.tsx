@@ -1,0 +1,18 @@
+import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+import { Bold, Code2, ImagePlus, Italic, Link, Save, Table2 } from "lucide-react";
+import type { Note } from "@/lib/notes";
+import { WikiMarkdown } from "./WikiMarkdown";
+
+export function MarkdownEditor({ note, onOpenNote }: { note: Note; onOpenNote: (note: Note) => void }) {
+  const key = `java-learning-draft:${note.slug}`;
+  const [draft, setDraft] = useState(() => localStorage.getItem(key) ?? note.body);
+  const [saved, setSaved] = useState(false);
+  const textarea = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { setDraft(localStorage.getItem(key) ?? note.body); setSaved(false); }, [key, note.body]);
+  const headings = useMemo(() => Array.from(draft.matchAll(/^#{2,3}\s+(.+)$/gm), (match) => match[1]), [draft]);
+  function insert(before: string, after = "") { const target = textarea.current; const start = target?.selectionStart ?? draft.length; const end = target?.selectionEnd ?? start; setDraft(`${draft.slice(0, start)}${before}${draft.slice(start, end)}${after}${draft.slice(end)}`); }
+  function save() { localStorage.setItem(key, draft); setSaved(true); }
+  function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); save(); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") { event.preventDefault(); insert("**", "**"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") { event.preventDefault(); insert("*", "*"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); insert("[", "](https://)"); } }
+  function onDrop(event: DragEvent<HTMLTextAreaElement>) { event.preventDefault(); const file = event.dataTransfer.files[0]; if (file?.type.startsWith("image/")) insert(`![${file.name}](./images/${file.name})`); }
+  return <div className="grid min-h-[64vh] gap-0 overflow-hidden rounded-md border border-slate-950/15 md:grid-cols-2"><section className="border-b border-slate-950/15 bg-slate-950 p-3 md:border-b-0 md:border-r"><div className="mb-2 flex flex-wrap gap-1"><button onClick={() => insert("**", "**")}><Bold /></button><button onClick={() => insert("*", "*")}><Italic /></button><button onClick={() => insert("[", "](https://)")}><Link /></button><button onClick={() => insert("\n| 欄位 | 內容 |\n|---|---|\n| | |\n")}><Table2 /></button><button onClick={() => insert("\n```java\n\n```\n")}><Code2 /></button><button onClick={() => insert("\n```mermaid\ngraph TD\n  A[Start] --> B[Note]\n```\n")}><ImagePlus /></button><button onClick={save} className="ml-auto"><Save />{saved ? "草稿已保存" : "Ctrl+S"}</button></div><textarea ref={textarea} value={draft} onChange={(e) => { setDraft(e.target.value); setSaved(false); }} onKeyDown={onKeyDown} onDrop={onDrop} onDragOver={(e) => e.preventDefault()} className="h-[56vh] w-full resize-none bg-transparent font-mono text-sm leading-6 text-slate-100 outline-none" aria-label="Markdown 草稿編輯器" /></section><section className="overflow-auto bg-[#fffdf7] p-5"><p className="section-label text-teal-800">PREVIEW · DRAFT ONLY</p><div className="mt-3 flex gap-3"><aside className="w-36 shrink-0 text-xs text-slate-500">{headings.map((heading) => <p key={heading} className="mb-2">{heading}</p>)}</aside><article className="min-w-0 flex-1 prose prose-slate max-w-none"><WikiMarkdown markdown={draft} onOpenNote={onOpenNote} /></article></div><p className="mt-6 rounded border border-amber-700/20 bg-amber-50 p-3 text-xs text-amber-950">拖放圖片會插入 `./images/檔名` 語法；請將實體檔案手動放到 Markdown 相對應的 images 資料夾。草稿只保存在此瀏覽器，不會直接寫回 Markdown。</p></section></div>;
+}

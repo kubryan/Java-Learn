@@ -2,11 +2,8 @@
  * Design reminder — 藍圖工作桌：三帶式工作畫布，讓導覽、閱讀與下一步始終同時可見。
  */
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Streamdown } from "streamdown";
 import {
   ArrowRight,
-  BookMarked,
-  BookOpen,
   Check,
   ChevronRight,
   Clipboard,
@@ -14,16 +11,24 @@ import {
   Database,
   FileText,
   Gamepad2,
-  LayoutPanelTop,
+  History,
   Languages,
-  MonitorCog,
+  Network,
   Plus,
   Search,
   Server,
   Sparkles,
+  Star,
+  Tags,
 } from "lucide-react";
 import { categories, notes, searchNotes, type Note } from "@/lib/notes";
+import { KnowledgeTree } from "@/components/KnowledgeTree";
+import { KnowledgeGraph } from "@/components/KnowledgeGraph";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { WikiMarkdown } from "@/components/WikiMarkdown";
 import { guideForCategory } from "@/lib/bilingual";
+import { useTheme } from "@/contexts/ThemeContext";
+import { getNoteRevisions, getRecentMarkdownChanges, summarizeRevisionDiff, syncNoteHistory, type NoteRevision } from "@/lib/note-history";
 import {
   Dialog,
   DialogClose,
@@ -39,19 +44,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   addCustomKnowledge,
   createKnowledgeSnippet,
+  getKnowledgeTags,
   getKnowledgeStats,
+  highlightKnowledgeText,
   searchKnowledge,
   syncKnowledgeIndex,
   type KnowledgeRecord,
   type KnowledgeSearchResult,
   type KnowledgeStats,
+  type KnowledgeTag,
 } from "@/lib/knowledge-db";
 
 const assets = {
-  hero: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1800&q=85",
-  foundation: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=85",
-  backend: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=85",
-  minecraft: "https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1200&q=85",
+  hero: "/manus-storage/java-learning-hero_ef201d8d.png",
+  mark: "/manus-storage/java-learning-mark_cab4aea9.png",
+  foundation: "/manus-storage/route-java-foundation_7b86bd17.png",
+  backend: "/manus-storage/route-backend-desktop_8a95f80b.png",
+  minecraft: "/manus-storage/route-minecraft-loaders_fad81fd7.png",
 };
 
 const tracks = [
@@ -101,19 +110,20 @@ function getHeadings(note: Note): string[] {
   return Array.from(note.body.matchAll(/^#{2,3}\s+(.+)$/gm), (match) => match[1]);
 }
 
-function categoryIcon(category: string) {
-  if (category === "桌面工具") return MonitorCog;
-  if (category === "後端 API") return Server;
-  if (["Minecraft 共通", "Fabric", "NeoForge"].includes(category)) return Gamepad2;
-  if (category === "物件導向") return LayoutPanelTop;
-  return BookOpen;
+function HighlightedSearchText({ value, query }: { value: string; query: string }) {
+  return <>{highlightKnowledgeText(value, query).map((part, index) => part.isMatch ? <mark className="rounded-sm bg-amber-300/70 px-0.5 text-inherit" key={`${part.text}-${index}`}>{part.text}</mark> : <span key={`${part.text}-${index}`}>{part.text}</span>)}</>;
 }
 
 export default function Home() {
+  const { theme, setTheme } = useTheme();
   const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get("q") ?? "");
   const [activeCategory, setActiveCategory] = useState("全部");
+  const [selectedTag, setSelectedTag] = useState(() => new URLSearchParams(window.location.search).get("tag") ?? "");
   const [activeSlug, setActiveSlug] = useState(notes[0]?.slug ?? "");
   const [completed, setCompleted] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [recentReads, setRecentReads] = useState<{ slug: string; at: string }[]>([]);
+  const [recentEdits, setRecentEdits] = useState<NoteRevision[]>([]);
   const [knowledgeResults, setKnowledgeResults] = useState<KnowledgeSearchResult[]>([]);
   const [knowledgeStats, setKnowledgeStats] = useState<KnowledgeStats>({ total: 0, notes: 0, terms: 0, custom: 0 });
   const [indexReady, setIndexReady] = useState(false);
@@ -126,7 +136,19 @@ export default function Home() {
   const [formError, setFormError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
   const [isSavingKnowledge, setIsSavingKnowledge] = useState(false);
+  const [quickSearchOpen, setQuickSearchOpen] = useState(false);
+  const [quickSearchQuery, setQuickSearchQuery] = useState("");
+  const [quickSearchResults, setQuickSearchResults] = useState<KnowledgeSearchResult[]>([]);
+  const [knowledgeTags, setKnowledgeTags] = useState<KnowledgeTag[]>([]);
+  const [tagOpen, setTagOpen] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "graph");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [noteRevisions, setNoteRevisions] = useState<NoteRevision[]>([]);
+  const [selectedRevisionId, setSelectedRevisionId] = useState("");
+  const [historyMessage, setHistoryMessage] = useState("");
   const articleRef = useRef<HTMLElement>(null);
+  const quickSearchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("java-learning-completed");
@@ -139,11 +161,19 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    try { setFavorites(JSON.parse(window.localStorage.getItem("java-learning-favorites") ?? "[]") as string[]); } catch { window.localStorage.removeItem("java-learning-favorites"); }
+    try { setRecentReads(JSON.parse(window.localStorage.getItem("java-learning-recent-reads") ?? "[]") as { slug: string; at: string }[]); } catch { window.localStorage.removeItem("java-learning-recent-reads"); }
+  }, []);
+
+  useEffect(() => {
     let active = true;
     syncKnowledgeIndex(notes)
-      .then((stats) => {
+      .then(async (stats) => {
+        if (!active) return;
+        const tags = await getKnowledgeTags();
         if (!active) return;
         setKnowledgeStats(stats);
+        setKnowledgeTags(tags);
         setIndexReady(true);
       })
       .catch(() => {
@@ -154,11 +184,16 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    syncNoteHistory(notes).catch(() => undefined);
+    getRecentMarkdownChanges().then(setRecentEdits).catch(() => setRecentEdits([]));
+  }, []);
+
+  useEffect(() => {
     if (!indexReady) return;
     let active = true;
     setSearchingKnowledge(true);
     const timer = window.setTimeout(() => {
-      searchKnowledge(query, activeCategory)
+      searchKnowledge(query, activeCategory, selectedTag)
         .then((results) => {
           if (active) setKnowledgeResults(results);
         })
@@ -170,7 +205,30 @@ export default function Home() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [activeCategory, indexReady, query]);
+  }, [activeCategory, indexReady, query, selectedTag]);
+
+  useEffect(() => {
+    if (!quickSearchOpen || !indexReady) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      searchKnowledge(quickSearchQuery, "全部", selectedTag)
+        .then((results) => { if (active) setQuickSearchResults(results); })
+        .catch(() => { if (active) setQuickSearchResults([]); });
+    }, 70);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [indexReady, quickSearchOpen, quickSearchQuery, selectedTag]);
+
+  useEffect(() => {
+    const onShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setQuickSearchOpen(true);
+        window.setTimeout(() => quickSearchInputRef.current?.focus(), 0);
+      }
+    };
+    window.addEventListener("keydown", onShortcut);
+    return () => window.removeEventListener("keydown", onShortcut);
+  }, []);
 
   useEffect(() => {
     if (!knowledgeOpen || !indexReady) return;
@@ -185,12 +243,13 @@ export default function Home() {
     return () => { active = false; };
   }, [indexReady, knowledgeOpen]);
 
-  const filteredNotes = useMemo(() => searchNotes(query, activeCategory), [query, activeCategory]);
+  const filteredNotes = useMemo(() => searchNotes(query, activeCategory, selectedTag), [query, activeCategory, selectedTag]);
   const selectedNote = notes.find((note) => note.slug === activeSlug) ?? filteredNotes[0] ?? notes[0];
   const headings = selectedNote ? getHeadings(selectedNote) : [];
   const bilingualGuide = selectedNote ? guideForCategory(selectedNote.category) : guideForCategory("開始使用");
   const totalCompleted = completed.length;
   const completionPercent = notes.length ? Math.round((totalCompleted / notes.length) * 100) : 0;
+  const favoriteNotes = useMemo(() => favorites.map((slug) => notes.find((note) => note.slug === slug)).filter((note): note is Note => Boolean(note)), [favorites]);
 
   useEffect(() => {
     if (filteredNotes.length && !filteredNotes.some((note) => note.slug === activeSlug)) {
@@ -198,11 +257,50 @@ export default function Home() {
     }
   }, [activeSlug, filteredNotes]);
 
+  useEffect(() => {
+    if (!selectedNote) return;
+    setRecentReads((current) => {
+      const next = [{ slug: selectedNote.slug, at: new Date().toISOString() }, ...current.filter((item) => item.slug !== selectedNote.slug)].slice(0, 6);
+      window.localStorage.setItem("java-learning-recent-reads", JSON.stringify(next));
+      return next;
+    });
+  }, [selectedNote]);
+
+  useEffect(() => {
+    if (!historyOpen || !selectedNote) return;
+    getNoteRevisions(selectedNote.slug).then((revisions) => {
+      setNoteRevisions(revisions);
+      setSelectedRevisionId(revisions[0]?.id ?? "");
+      setHistoryMessage("");
+    }).catch(() => setNoteRevisions([]));
+  }, [historyOpen, selectedNote]);
+
   function selectCategory(category: string) {
     setActiveCategory(category);
     setQuery("");
-    const first = searchNotes("", category)[0];
+    const first = searchNotes("", category, selectedTag)[0];
     if (first) setActiveSlug(first.slug);
+  }
+
+  function selectTag(tag: string) {
+    setSelectedTag(tag);
+    setActiveCategory("全部");
+    setQuery("");
+    setTagOpen(false);
+    const first = searchNotes("", "全部", tag)[0];
+    if (first) setActiveSlug(first.slug);
+  }
+
+  function clearTag() {
+    setSelectedTag("");
+  }
+
+  function openWikiNote(note: Note) {
+    setActiveCategory(note.category);
+    setSelectedTag("");
+    setQuery("");
+    setActiveSlug(note.slug);
+    window.setTimeout(() => articleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
   function toggleCompleted(slug: string) {
@@ -213,8 +311,30 @@ export default function Home() {
     });
   }
 
+  function toggleFavorite(slug: string) {
+    setFavorites((current) => {
+      const next = current.includes(slug) ? current.filter((item) => item !== slug) : [slug, ...current];
+      window.localStorage.setItem("java-learning-favorites", JSON.stringify(next));
+      return next;
+    });
+  }
+
   function scrollToHeading(index: number) {
     articleRef.current?.querySelectorAll("h2, h3")[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function openQuickSearch() {
+    setQuickSearchOpen(true);
+    window.setTimeout(() => quickSearchInputRef.current?.focus(), 0);
+  }
+
+  async function copyRevision(revision: NoteRevision) {
+    try {
+      await navigator.clipboard.writeText(revision.content);
+      setHistoryMessage(`v${revision.revisionNumber} 已複製；請貼回 ${selectedNote.path}，再以 Git 或本機備份提交。`);
+    } catch {
+      setHistoryMessage("無法自動複製；請手動選取預覽內容。系統沒有修改原始 Markdown。");
+    }
   }
 
   function selectKnowledgeResult(result: KnowledgeSearchResult) {
@@ -258,9 +378,10 @@ export default function Home() {
         tags: splitKnowledgeValues(customKnowledge.tags),
         content: customKnowledge.content,
       });
-      const [stats, results] = await Promise.all([getKnowledgeStats(), searchKnowledge("")]);
+      const [stats, results, tags] = await Promise.all([getKnowledgeStats(), searchKnowledge(""), getKnowledgeTags()]);
       setKnowledgeStats(stats);
       setOverviewResults(results);
+      setKnowledgeTags(tags);
       setCustomKnowledge(emptyCustomKnowledge);
       setSavedMessage(`「${record.title}」已保存到這台瀏覽器的知識庫。`);
       setKnowledgeView("overview");
@@ -269,6 +390,11 @@ export default function Home() {
     } finally {
       setIsSavingKnowledge(false);
     }
+  }
+
+  function selectQuickSearchResult(result: KnowledgeSearchResult) {
+    setQuickSearchOpen(false);
+    selectKnowledgeResult(result);
   }
 
   if (!selectedNote) {
@@ -286,20 +412,70 @@ export default function Home() {
             aria-label="開啟學習基地已保存知識總覽"
             title="開啟已保存知識"
           >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-teal-800/25 bg-white/70 text-teal-800 shadow-sm" aria-hidden="true"><BookOpen className="h-6 w-6" /></span>
+            <img className="h-11 w-11 shrink-0" src={assets.mark} alt="程式學習基地識別標誌" />
             <div className="min-w-0">
-              <p className="font-mono text-[10px] font-bold tracking-[0.2em] text-teal-700">LEARNING KNOWLEDGE BASE · OPEN</p>
+              <p className="font-mono text-[9px] font-bold tracking-[0.16em] text-teal-700">LOCAL MARKDOWN WORKBENCH · OPEN</p>
               <h1 className="wordmark-lockup truncate">
-                <span className="wordmark-java">CODE</span><span className="wordmark-divider">/</span><span>學習基地</span>
+                <span className="wordmark-java">JAVA</span><span className="wordmark-divider">/</span><span>學習基地</span>
               </h1>
             </div>
           </button>
-          <div className="hidden items-center gap-2 text-xs text-slate-600 md:flex">
+          <button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900 md:hidden" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button>
+          <div className="hidden items-center gap-3 text-xs text-slate-600 md:flex">
+            <span className="inline-flex overflow-hidden rounded-md border border-slate-950/10 bg-white/65"><button type="button" onClick={() => setTheme?.("light")} className={`px-2 py-1.5 ${theme === "light" ? "bg-teal-700 text-white" : ""}`}>☀ Light</button><button type="button" onClick={() => setTheme?.("dark")} className={`px-2 py-1.5 ${theme === "dark" ? "bg-teal-700 text-white" : ""}`}>🌙 Dark</button><button type="button" onClick={() => setTheme?.("system")} className={`px-2 py-1.5 ${theme === "system" ? "bg-teal-700 text-white" : ""}`}>🖥 System</button></span>
+            <button type="button" onClick={() => setGraphOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-3.5 w-3.5" />知識圖</button>
+            <button type="button" onClick={openQuickSearch} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟快速全文搜尋">
+              <Search className="h-3.5 w-3.5" />快速搜尋 <kbd className="rounded border border-slate-950/10 bg-[#f8f4e9] px-1 font-mono text-[10px]">Ctrl K</kbd>
+            </button>
             <span className="verification-dot" />
             <span>筆記由 Markdown 載入</span>
           </div>
         </div>
       </header>
+
+      <Dialog open={graphOpen} onOpenChange={setGraphOpen}>
+        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-6xl gap-0 overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
+          <DialogHeader className="border-b border-slate-950/10 bg-[#fffdf7]/80 px-6 pb-5 pt-6 sm:px-8">
+            <div className="flex items-center gap-2 text-teal-800"><Network className="h-4 w-4" /><p className="section-label text-teal-800">MARKDOWN WIKI GRAPH</p></div>
+            <DialogTitle className="font-serif text-2xl font-bold tracking-tight">知識關聯圖</DialogTitle>
+            <DialogDescription className="max-w-3xl leading-6 text-slate-600">圖中的節點來自含有 Wiki 連結的 Markdown 筆記；連線直接由 `[[筆記名稱]]` 建立。點擊節點可開啟文章，拖曳可調整你的閱讀座標。</DialogDescription>
+          </DialogHeader>
+          <div className="px-4 py-4 sm:px-6"><KnowledgeGraph activeSlug={selectedNote.slug} visibleNoteSlugs={filteredNotes.map((note) => note.slug)} onOpenNote={(note) => { setGraphOpen(false); openWikiNote(note); }} /></div>
+          <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-4 sm:px-8"><span className="mr-auto font-mono text-[10px] text-slate-500">WIKI LINKS → LIVE GRAPH · DRAG / ZOOM / OPEN NOTE</span><DialogClose className="rounded-md border border-slate-950/15 bg-white px-3 py-2 text-sm font-semibold transition hover:bg-slate-950 hover:text-white">關閉圖譜</DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-5xl gap-0 overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
+          <DialogHeader className="border-b border-slate-950/10 bg-[#fffdf7]/80 px-6 pb-5 pt-6 sm:px-8"><div className="flex items-center gap-2 text-teal-800"><History className="h-4 w-4" /><p className="section-label text-teal-800">LOCAL REVISION TIMELINE</p></div><DialogTitle className="font-serif text-2xl font-bold tracking-tight">{selectedNote.title} 的修改歷史</DialogTitle><DialogDescription className="leading-6 text-slate-600">快照保存在目前瀏覽器；還原採「複製內容」流程，不會直接覆寫 `client/src/content/`。</DialogDescription></DialogHeader>
+          <div className="grid gap-4 px-6 py-5 md:grid-cols-[230px_minmax(0,1fr)] sm:px-8"><aside className="space-y-2">{noteRevisions.map((revision) => <button key={revision.id} type="button" onClick={() => setSelectedRevisionId(revision.id)} className={`w-full rounded-md border p-3 text-left ${selectedRevisionId === revision.id ? "border-teal-700 bg-teal-700/[0.09]" : "border-slate-950/10 bg-white/65"}`}><span className="font-mono text-[10px] font-bold text-teal-800">v{revision.revisionNumber} · {revision.source === "baseline" ? "BASELINE" : "CHANGE"}</span><span className="mt-1 block text-sm font-semibold">{new Intl.DateTimeFormat("zh-TW", { dateStyle: "short", timeStyle: "short" }).format(new Date(revision.savedAt))}</span></button>)}</aside>{noteRevisions.filter((revision) => revision.id === selectedRevisionId).map((revision) => { const diff = summarizeRevisionDiff(selectedNote.body, revision.content); return <section key={revision.id}><div className="rounded-md border border-teal-800/15 bg-teal-700/[0.05] p-3 text-sm"><p className="section-label text-teal-800">SAFE RESTORE SUMMARY</p><p className="mt-1 font-semibold">{diff.changed ? `相對目前版本：${diff.addedLines} 行新增、${diff.removedLines} 行移除` : "這是目前內容的相同快照。"}</p><p className="mt-1 text-xs text-slate-600">舊版 {diff.revisionLines} 行 · 目前 {diff.currentLines} 行</p></div><pre className="mt-3 max-h-[42vh] overflow-auto rounded-md border border-slate-950/15 bg-slate-950 p-4 text-xs leading-6 text-slate-100"><code>{revision.content}</code></pre><button type="button" onClick={() => copyRevision(revision)} className="primary-stamp mt-3"><Clipboard className="h-4 w-4" />複製 v{revision.revisionNumber} 還原內容</button></section>; })}</div>
+          <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-4 sm:px-8"><span className="mr-auto text-xs text-slate-600">{historyMessage || "長期檔案版本請在 Windows 專案使用 Git；瀏覽器快照不會跨裝置同步。"}</span><DialogClose className="rounded-md border border-slate-950/15 bg-white px-3 py-2 text-sm font-semibold">關閉</DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen}><DialogContent className="max-h-[calc(100vh-2rem)] max-w-7xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0"><DialogHeader className="border-b border-slate-950/10 px-6 pb-4 pt-6"><DialogTitle className="font-serif text-2xl font-bold">Markdown 編輯工作台 · 草稿模式</DialogTitle><DialogDescription>Ctrl+S 保存草稿；預覽不會直接覆寫 `client/src/content/`。</DialogDescription></DialogHeader><div className="p-4"><MarkdownEditor note={selectedNote} onOpenNote={(note) => { setEditorOpen(false); openWikiNote(note); }} /></div></DialogContent></Dialog>
+
+      <Dialog open={quickSearchOpen} onOpenChange={setQuickSearchOpen}>
+        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-3xl gap-0 overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
+          <DialogHeader className="border-b border-slate-950/10 bg-[#fffdf7]/80 px-6 pb-5 pt-6 sm:px-8">
+            <div className="flex items-center gap-2 text-teal-800"><Search className="h-4 w-4" /><p className="section-label text-teal-800">FULL-TEXT KNOWLEDGE SEARCH</p></div>
+            <DialogTitle className="font-serif text-2xl font-bold tracking-tight">快速搜尋所有知識</DialogTitle>
+            <DialogDescription className="leading-6 text-slate-600">搜尋檔名、Markdown 正文、分類、標籤與中英文術語；支援像 `Minecraft 26.2`、`Consumable`、`ResourceLocation`、`Fabric 26.2` 的技術查詢。</DialogDescription>
+            <div className="relative mt-4"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" /><Input ref={quickSearchInputRef} value={quickSearchQuery} onChange={(event) => setQuickSearchQuery(event.target.value)} placeholder="輸入中文概念、英文 API、檔名或標籤…" className="h-11 border-slate-900/15 bg-white pl-9 pr-16" aria-label="快速全文搜尋" /><kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-slate-950/10 bg-[#f8f4e9] px-1.5 py-0.5 font-mono text-[10px] text-slate-500">ESC</kbd></div>
+          </DialogHeader>
+          <div className="divide-y divide-slate-950/10">
+            {quickSearchResults.slice(0, 12).map((result) => (
+              <button key={result.record.id} type="button" onClick={() => selectQuickSearchResult(result)} className="group flex w-full items-start gap-3 px-6 py-3.5 text-left transition hover:bg-teal-700/[0.05] sm:px-8">
+                <span className="mt-0.5 rounded-sm border border-teal-800/20 bg-teal-700/[0.08] px-1.5 py-0.5 font-mono text-[10px] font-bold text-teal-800">{result.record.kind === "term" ? "TERM" : result.record.kind === "custom" ? "LOCAL" : "MD"}</span>
+                <span className="min-w-0 flex-1"><span className="font-serif text-base font-bold group-hover:text-teal-900"><HighlightedSearchText value={result.record.title} query={quickSearchQuery} /></span>{result.record.titleEn && result.record.titleEn !== result.record.title && <span className="ml-2 font-mono text-xs text-teal-800"><HighlightedSearchText value={result.record.titleEn} query={quickSearchQuery} /></span>}<span className="mt-1 block text-xs leading-5 text-slate-600"><HighlightedSearchText value={createKnowledgeSnippet(result.record, quickSearchQuery)} query={quickSearchQuery} /></span><span className="mt-2 block font-mono text-[10px] text-slate-500">{result.record.path.split("/").pop()} · 命中：{result.matchedIn.join("、")}</span></span>
+                <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-teal-800 opacity-0 transition group-hover:opacity-100" />
+              </button>
+            ))}
+            {indexReady && quickSearchResults.length === 0 && <p className="px-6 py-8 text-sm leading-6 text-slate-600 sm:px-8">找不到結果。試試較短的 API 名稱、標籤或修正常見拼寫，例如 `resourcelocaton`、`consumable`、`fabric 26.2`。</p>}
+          </div>
+          <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-3 sm:px-8"><span className="mr-auto font-mono text-[10px] text-slate-500">{quickSearchResults.length} MATCHES · Ctrl／⌘ K 開啟 · Esc 關閉</span><DialogClose className="rounded-md border border-slate-950/15 bg-white px-3 py-2 text-sm font-semibold transition hover:bg-slate-950 hover:text-white">關閉</DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={knowledgeOpen} onOpenChange={(open) => { setKnowledgeOpen(open); if (!open) { setKnowledgeView("overview"); setSelectedCustomKnowledge(null); setFormError(""); } }}>
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-4xl gap-0 overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
@@ -344,6 +520,11 @@ export default function Home() {
                 ))}
               </div>
             </section>
+
+            <section>
+              <div className="flex items-center justify-between gap-4"><div><p className="section-label">TAG DIRECTORY</p><h3 className="mt-1 font-serif text-xl font-bold">依標籤探索知識</h3></div><span className="font-mono text-xs text-slate-500">{knowledgeTags.length} TAGS</span></div>
+              <div className="mt-3 flex flex-wrap gap-2">{knowledgeTags.map((tag) => <button key={tag.normalized} type="button" onClick={() => { selectTag(tag.name); setKnowledgeOpen(false); }} className="inline-flex items-center gap-1.5 rounded-md border border-teal-800/15 bg-white/70 px-2.5 py-1.5 text-xs transition hover:border-teal-700/40 hover:bg-white"><span className="font-semibold text-slate-800">{tag.name}</span><span className="font-mono text-teal-800">{tag.count}</span></button>)}</div>
+            </section>
           </div>
 
           <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-4 sm:px-8">
@@ -376,7 +557,7 @@ export default function Home() {
                 {selectedCustomKnowledge.titleEn && <DialogDescription className="font-mono text-teal-800">{selectedCustomKnowledge.titleEn}</DialogDescription>}
               </DialogHeader>
               <div className="space-y-5 px-6 py-6 sm:px-8">
-                <div className="flex flex-wrap gap-1.5">{selectedCustomKnowledge.tags.map((tag) => <span className="tag-chip" key={tag}>{tag}</span>)}</div>
+                <div className="flex flex-wrap gap-1.5">{selectedCustomKnowledge.tags.map((tag) => <button type="button" className="tag-chip transition hover:border-teal-700/40 hover:bg-white" key={tag} onClick={() => { selectTag(tag); setKnowledgeOpen(false); }}>#{tag}</button>)}</div>
                 {selectedCustomKnowledge.terms.length > 0 && <div className="rounded-md border border-teal-800/15 bg-teal-700/[0.05] p-3"><p className="section-label text-teal-800">SEARCH TERMS</p><p className="mt-2 font-mono text-sm leading-6 text-slate-700">{selectedCustomKnowledge.terms.join(" · ")}</p></div>}
                 <article className="whitespace-pre-wrap font-serif text-base leading-8 text-slate-800">{selectedCustomKnowledge.content}</article>
               </div>
@@ -397,43 +578,22 @@ export default function Home() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜尋中文概念或 English term…"
-              className="w-full rounded-md border border-slate-900/15 bg-white/80 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-              aria-label="搜尋 Markdown 筆記"
+              placeholder="全文搜尋：概念、API、檔名、標籤…"
+              className="w-full rounded-md border border-slate-900/15 bg-white/80 py-2.5 pl-9 pr-14 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+              aria-label="搜尋 Markdown、術語與本地知識"
             />
+            <button type="button" onClick={openQuickSearch} className="absolute right-2 top-1/2 -translate-y-1/2 rounded border border-slate-950/10 bg-[#f8f4e9] px-1.5 py-0.5 font-mono text-[10px] text-slate-500 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="以快速搜尋開啟全文搜尋">Ctrl K</button>
           </div>
           <div className="mb-4 flex items-center gap-2 px-1 text-[10px] font-mono text-teal-800">
             <Database className="h-3.5 w-3.5" />
             <span>{indexReady ? `LOCAL INDEX · ${knowledgeStats.notes} NOTES · ${knowledgeStats.terms} TERMS` : "LOCAL INDEX · 建立中"}</span>
           </div>
+          <section className="mb-4 rounded-md border border-teal-800/15 bg-teal-700/[0.045] p-2">
+            <button type="button" onClick={() => setTagOpen((open) => !open)} className="flex w-full items-center gap-2 px-1 py-1 text-left"><Tags className="h-3.5 w-3.5 text-teal-800" /><span className="section-label text-teal-800">EXPLORE TAGS</span><span className="ml-auto font-mono text-[10px] text-teal-800">{knowledgeTags.length}</span></button>
+            {tagOpen && <div className="mt-2 flex flex-wrap gap-1.5">{knowledgeTags.slice(0, 24).map((tag) => <button key={tag.normalized} type="button" onClick={() => selectTag(tag.name)} className={`rounded-sm border px-1.5 py-1 text-[10px] transition ${selectedTag.toLocaleLowerCase() === tag.normalized ? "border-teal-700 bg-teal-700 text-white" : "border-teal-800/15 bg-white/70 text-slate-700 hover:border-teal-700/40"}`}>{tag.name} <span className="font-mono opacity-70">{tag.count}</span></button>)}</div>}
+          </section>
 
-          <nav aria-label="學習分類" className="space-y-1">
-            <button
-              type="button"
-              onClick={() => selectCategory("全部")}
-              className={`nav-row ${activeCategory === "全部" ? "nav-row-active" : ""}`}
-            >
-              <BookMarked className="h-4 w-4" />
-              <span>全部筆記</span>
-              <span className="ml-auto font-mono text-[10px]">{notes.length}</span>
-            </button>
-            {categories.map((category, index) => {
-              const Icon = categoryIcon(category);
-              const count = notes.filter((note) => note.category === category).length;
-              return (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => selectCategory(category)}
-                  className={`nav-row ${activeCategory === category ? "nav-row-active" : ""}`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="min-w-0 flex-1 text-left">{`${String(index + 1).padStart(2, "0")} · ${category}`}</span>
-                  <span className="font-mono text-[10px] text-slate-500">{count}</span>
-                </button>
-              );
-            })}
-          </nav>
+          <KnowledgeTree notes={filteredNotes} activeSlug={activeSlug} completed={completed} onOpenNote={openWikiNote} />
 
           <div className="mt-5 rounded-md border border-teal-700/20 bg-teal-700/[0.07] p-3">
             <div className="mb-2 flex items-center justify-between">
@@ -448,10 +608,13 @@ export default function Home() {
         </aside>
 
         <main className="min-w-0 space-y-5">
-          {!query.trim() && (
+          {selectedTag && <section className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-teal-800/20 bg-teal-700/[0.07] px-4 py-3"><div className="flex items-center gap-2"><Tags className="h-4 w-4 text-teal-800" /><span className="section-label text-teal-800">TAG FILTER</span><span className="rounded-sm bg-white px-2 py-1 font-mono text-xs font-bold text-teal-900">{selectedTag}</span><span className="text-xs text-slate-600">{filteredNotes.length} 篇 Markdown 筆記</span></div><button type="button" onClick={clearTag} className="rounded-md border border-teal-800/20 bg-white px-2.5 py-1.5 text-xs font-bold text-teal-800 transition hover:border-teal-700 hover:bg-teal-700 hover:text-white">清除標籤</button></section>}
+          {!query.trim() && !selectedTag && (
             <>
+          <section className="mb-5 grid gap-3 md:grid-cols-2"><div className="rounded-md border border-slate-950/15 bg-[#fffdf7]/80 p-4"><p className="section-label text-teal-800">RECENTLY EDITED</p>{recentEdits.length ? recentEdits.map((item) => { const note = notes.find((entry) => entry.slug === item.noteSlug); return note && <button key={item.id} type="button" onClick={() => openWikiNote(note)} className="mt-2 block w-full text-left text-sm font-semibold hover:text-teal-800">📝 {note.title}<span className="ml-2 font-mono text-[10px] font-normal text-slate-500">{new Date(item.savedAt).toLocaleString("zh-TW")}</span></button>; }) : <p className="mt-2 text-sm text-slate-500">Markdown 下一次內容變更後會出現在此處。</p>}</div><div className="rounded-md border border-slate-950/15 bg-[#fffdf7]/80 p-4"><p className="section-label text-teal-800">RECENTLY READ</p>{recentReads.map((item) => { const note = notes.find((entry) => entry.slug === item.slug); return note && <button key={item.slug} type="button" onClick={() => openWikiNote(note)} className="mt-2 block w-full text-left text-sm font-semibold hover:text-teal-800">📖 {note.title}<span className="ml-2 font-mono text-[10px] font-normal text-slate-500">{new Date(item.at).toLocaleString("zh-TW")}</span></button>; })}</div></section>
+          {favoriteNotes.length > 0 && <section className="mb-5 rounded-md border border-amber-700/25 bg-amber-50/70 p-4 shadow-sm"><div className="flex items-center gap-2"><Star className="h-4 w-4 fill-amber-500 text-amber-700" /><p className="section-label text-amber-800">PINNED NOTES · {favoriteNotes.length}</p></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{favoriteNotes.map((note) => <button key={note.slug} type="button" onClick={() => openWikiNote(note)} className="rounded-md border border-slate-950/10 bg-[#fffdf7] px-3 py-2.5 text-left transition hover:border-amber-700/40"><span className="block font-serif font-bold">{note.title}</span><span className="mt-1 block font-mono text-[10px] text-teal-800">{note.category} · {note.tags.slice(0, 2).join(" · ")}</span></button>)}</div></section>}
           <section className="hero-workbench overflow-hidden">
-            <img className="hero-photo" src={assets.hero} alt="擺有藍圖紙、筆記本與技術工具的學習工作桌" />
+            <div className="hero-schematic" aria-hidden="true"><span className="schematic-code">public static void main(String[] args)</span><span className="schematic-note">VERIFY · BUILD · REPEAT</span><span className="schematic-axis">JAVA / PYTHON / MINECRAFT</span><i className="schematic-orbit schematic-orbit-one" /><i className="schematic-orbit schematic-orbit-two" /></div>
             <div className="hero-coordinate-rail" aria-hidden="true"><span>00</span><i /><span>10</span><i /><span>20</span><i /><span>30</span></div>
             <div className="hero-copy">
               <div className="mb-3 flex items-center gap-2"><span className="coordinate-chip">00.01</span><p className="section-label text-teal-800">YOUR CODE COORDINATES</p></div>
@@ -475,7 +638,7 @@ export default function Home() {
               <span className="hidden text-xs text-slate-500 sm:block">點選路線，開啟對應筆記</span>
             </div>
             <div className="route-module-grid grid gap-3 lg:grid-cols-3">
-              {tracks.map((track) => {
+              {tracks.map((track, index) => {
                 const Icon = track.icon;
                 return (
                   <button
@@ -488,7 +651,7 @@ export default function Home() {
                     <div className="relative z-10 flex min-h-[228px] flex-col p-4">
                       <div className="flex items-center justify-between">
                         <span className="route-coordinate">{track.kicker}</span>
-                        <Icon className="h-4 w-4 text-teal-800" />
+                        <span className="route-anchor"><span>{String(index + 1).padStart(2, "0")}</span><i /><Icon className="h-3.5 w-3.5" /></span>
                       </div>
                       <div className="mt-auto rounded-md bg-[#fbf7ee]/94 p-3 backdrop-blur-sm">
                         <h3 className="font-serif text-lg font-bold leading-snug">{track.title}</h3>
@@ -522,6 +685,9 @@ export default function Home() {
                 <Check className="h-4 w-4" />
                 {completed.includes(selectedNote.slug) ? "已完成" : "標記完成"}
               </button>
+              <button type="button" onClick={() => setHistoryOpen(true)} className="completion-stamp"><History className="h-4 w-4" />修改歷史</button>
+              <button type="button" onClick={() => setEditorOpen(true)} className="completion-stamp"><FileText className="h-4 w-4" />編輯草稿</button>
+              <button type="button" onClick={() => toggleFavorite(selectedNote.slug)} className={`completion-stamp ${favorites.includes(selectedNote.slug) ? "completion-stamp-done" : ""}`}><Star className={`h-4 w-4 ${favorites.includes(selectedNote.slug) ? "fill-current" : ""}`} />{favorites.includes(selectedNote.slug) ? "已收藏" : "收藏"}</button>
             </div>
 
             <div className="border-b border-slate-900/10 bg-[#f6f1e7] px-4 py-2.5 sm:px-6">
@@ -530,7 +696,7 @@ export default function Home() {
                   <button
                     key={note.slug}
                     type="button"
-                    onClick={() => setActiveSlug(note.slug)}
+                    onClick={() => openWikiNote(note)}
                     className={`note-tab ${note.slug === selectedNote.slug ? "note-tab-active" : ""}`}
                   >
                     <span className="font-mono text-[10px]">{String(note.order).padStart(2, "0")}</span>
@@ -563,11 +729,12 @@ export default function Home() {
                       <span className="mt-0.5 rounded-sm border border-teal-800/20 bg-teal-700/[0.08] px-1.5 py-0.5 font-mono text-[10px] font-bold text-teal-800">{result.record.kind === "term" ? "TERM" : "NOTE"}</span>
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                          <strong className="font-serif text-base group-hover:text-teal-900">{result.record.title}</strong>
-                          {result.record.titleEn !== result.record.title && <span className="font-mono text-xs text-teal-800">{result.record.titleEn}</span>}
+                          <strong className="font-serif text-base group-hover:text-teal-900"><HighlightedSearchText value={result.record.title} query={query} /></strong>
+                          {result.record.titleEn !== result.record.title && <span className="font-mono text-xs text-teal-800"><HighlightedSearchText value={result.record.titleEn} query={query} /></span>}
                         </span>
-                        <span className="mt-1 block text-xs leading-5 text-slate-600">{createKnowledgeSnippet(result.record, query)}</span>
-                        <span className="mt-2 block font-mono text-[10px] text-slate-500">{result.record.category} · 比對：{result.matchedIn.join("、")}</span>
+                        <span className="mt-1 block text-xs leading-5 text-slate-600"><HighlightedSearchText value={createKnowledgeSnippet(result.record, query)} query={query} /></span>
+                        <span className="mt-2 block font-mono text-[10px] text-slate-500">{result.record.path.split("/").pop()} · {result.record.category} · 命中：{result.matchedIn.join("、")}</span>
+                        {result.record.tags.length > 0 && <span className="mt-2 flex flex-wrap gap-1.5">{result.record.tags.slice(0, 5).map((tag) => <button key={tag} type="button" onClick={(event) => { event.stopPropagation(); selectTag(tag); }} className="rounded-sm border border-teal-800/15 bg-white px-1.5 py-0.5 font-mono text-[10px] text-teal-800 hover:border-teal-700/40">#{tag}</button>)}</span>}
                       </span>
                       <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-teal-800 opacity-0 transition group-hover:opacity-100" />
                     </button>
@@ -580,7 +747,7 @@ export default function Home() {
             )}
 
             <article ref={articleRef} className="reading-paper prose prose-slate max-w-none px-5 py-7 sm:px-9 sm:py-9">
-              <Streamdown>{selectedNote.body}</Streamdown>
+              <WikiMarkdown markdown={selectedNote.body} onOpenNote={openWikiNote} />
             </article>
           </section>
         </main>
@@ -609,7 +776,7 @@ export default function Home() {
               <Clipboard className="h-3.5 w-3.5" /> 複製 Markdown 路徑
             </button>
             <div className="mt-4 flex flex-wrap gap-1.5">
-              {selectedNote.tags.map((tag) => <span className="tag-chip" key={tag}>{tag}</span>)}
+              {selectedNote.tags.map((tag) => <button type="button" className="tag-chip transition hover:border-teal-700/40 hover:bg-white" key={tag} onClick={() => selectTag(tag)}>#{tag}</button>)}
             </div>
           </section>
 
