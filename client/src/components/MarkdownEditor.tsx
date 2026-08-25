@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 import { AlertCircle, Bold, Check, CloudUpload, Code2, ImagePlus, Italic, Link, RotateCcw, Save, Table2 } from "lucide-react";
 import type { Note } from "@/lib/notes";
+import { recordNoteRevision } from "@/lib/note-history";
 import { WikiMarkdown } from "./WikiMarkdown";
 
 type DiskNote = { content: string; hash: string; modifiedAt: string };
@@ -62,6 +63,7 @@ export function MarkdownEditor({ note, onOpenNote, onDirtyChange, onSaved }: { n
       hashRef.current = String(result.hash); savedContentRef.current = content;
       setHash(hashRef.current); setLastSavedAt(String(result.modifiedAt)); setPhase("saved");
       setStatus(`已保存 · ${new Date(String(result.modifiedAt)).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} 已寫入實體 Markdown 並建立備份`);
+      await recordNoteRevision(note, content, "physical-save").catch(() => undefined);
       onSaved?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : "保存失敗";
@@ -75,7 +77,7 @@ export function MarkdownEditor({ note, onOpenNote, onDirtyChange, onSaved }: { n
         window.setTimeout(() => void saveNow("auto"), 220);
       }
     }
-  }, [onSaved, relativePath]);
+  }, [note, onSaved, relativePath]);
 
   useEffect(() => {
     if (!loadedRef.current || !hash || draft === savedContentRef.current || phase === "saving" || phase === "conflict" || phase === "error") return;

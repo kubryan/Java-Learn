@@ -11,7 +11,7 @@ export type NoteRevision = {
   content: string;
   contentHash: string;
   savedAt: string;
-  source: "baseline" | "markdown-change";
+  source: "baseline" | "markdown-change" | "physical-save" | "restore";
   revisionNumber: number;
 };
 
@@ -83,6 +83,35 @@ function revisionsForNote(revisions: NoteRevision[], slug: string) {
     .sort((left, right) => right.savedAt.localeCompare(left.savedAt));
 }
 
+function nextRevisionNumber(revisions: NoteRevision[]) {
+  return revisions.reduce((highest, revision) => Math.max(highest, revision.revisionNumber), 0) + 1;
+}
+
+export async function recordNoteRevision(note: Note, content: string, source: "physical-save" | "restore") {
+  const existing = await readAllRevisions();
+  const noteRevisions = revisionsForNote(existing, note.slug);
+  const contentHash = createHash(content);
+  if (noteRevisions[0]?.contentHash === contentHash) return noteRevisions[0];
+  const revision: NoteRevision = {
+    id: `note:${note.slug}:${contentHash}:${Date.now().toString(36)}`,
+    noteId: `note:${note.slug}`,
+    noteSlug: note.slug,
+    noteTitle: note.title,
+    content,
+    contentHash,
+    savedAt: new Date().toISOString(),
+    source,
+    revisionNumber: nextRevisionNumber(noteRevisions),
+  };
+  const database = await openHistoryDatabase();
+  const transaction = database.transaction(REVISIONS_STORE, "readwrite");
+  const store = transaction.objectStore(REVISIONS_STORE);
+  store.put(revision);
+  noteRevisions.slice(MAX_REVISIONS_PER_NOTE - 1).forEach((oldRevision) => store.delete(oldRevision.id));
+  await transactionDone(transaction);
+  return revision;
+}
+
 export async function syncNoteHistory(notes: Note[]) {
   const existingRevisions = await readAllRevisions();
   const revisionsToSave: NoteRevision[] = [];
@@ -104,7 +133,7 @@ export async function syncNoteHistory(notes: Note[]) {
         contentHash,
         savedAt: now,
         source: noteRevisions.length ? "markdown-change" : "baseline",
-        revisionNumber: noteRevisions.length + 1,
+        revisionNumber: nextRevisionNumber(noteRevisions),
       });
     }
     const retained = noteRevisions.concat(revisionsToSave.filter((revision) => revision.noteSlug === note.slug))

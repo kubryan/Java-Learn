@@ -29,10 +29,11 @@ import { BackupCenter } from "@/components/BackupCenter";
 import { KnowledgeGraph } from "@/components/KnowledgeGraph";
 import { GitWorkspace } from "@/components/GitWorkspace";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { RevisionWorkspace } from "@/components/RevisionWorkspace";
 import { WikiMarkdown } from "@/components/WikiMarkdown";
 import { guideForCategory } from "@/lib/bilingual";
 import { useTheme } from "@/contexts/ThemeContext";
-import { getNoteRevisions, getRecentMarkdownChanges, summarizeRevisionDiff, syncNoteHistory, type NoteRevision } from "@/lib/note-history";
+import { getRecentMarkdownChanges, syncNoteHistory, type NoteRevision } from "@/lib/note-history";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -158,14 +159,11 @@ export default function Home() {
   const [graphOpen, setGraphOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "graph");
   const [backupOpen, setBackupOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "backup");
   const [gitOpen, setGitOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "git");
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "history");
   const [editorOpen, setEditorOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "editor");
   const [editorDirty, setEditorDirty] = useState(false);
   const [editorHasSaved, setEditorHasSaved] = useState(false);
   const [editorCloseConfirm, setEditorCloseConfirm] = useState(false);
-  const [noteRevisions, setNoteRevisions] = useState<NoteRevision[]>([]);
-  const [selectedRevisionId, setSelectedRevisionId] = useState("");
-  const [historyMessage, setHistoryMessage] = useState("");
   const articleRef = useRef<HTMLElement>(null);
   const quickSearchInputRef = useRef<HTMLInputElement>(null);
 
@@ -285,15 +283,6 @@ export default function Home() {
     });
   }, [selectedNote]);
 
-  useEffect(() => {
-    if (!historyOpen || !selectedNote) return;
-    getNoteRevisions(selectedNote.slug).then((revisions) => {
-      setNoteRevisions(revisions);
-      setSelectedRevisionId(revisions[0]?.id ?? "");
-      setHistoryMessage("");
-    }).catch(() => setNoteRevisions([]));
-  }, [historyOpen, selectedNote]);
-
   function selectCategory(category: string) {
     setActiveCategory(category);
     setQuery("");
@@ -345,15 +334,6 @@ export default function Home() {
   function openQuickSearch() {
     setQuickSearchOpen(true);
     window.setTimeout(() => quickSearchInputRef.current?.focus(), 0);
-  }
-
-  async function copyRevision(revision: NoteRevision) {
-    try {
-      await navigator.clipboard.writeText(revision.content);
-      setHistoryMessage(`v${revision.revisionNumber} 已複製；請貼回 ${selectedNote.path}，再以 Git 或本機備份提交。`);
-    } catch {
-      setHistoryMessage("無法自動複製；請手動選取預覽內容。系統沒有修改原始 Markdown。");
-    }
   }
 
   function selectKnowledgeResult(result: KnowledgeSearchResult) {
@@ -469,15 +449,9 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
-        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-5xl gap-0 overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
-          <DialogHeader className="border-b border-slate-950/10 bg-[#fffdf7]/80 px-6 pb-5 pt-6 sm:px-8"><div className="flex items-center gap-2 text-teal-800"><History className="h-4 w-4" /><p className="section-label text-teal-800">LOCAL REVISION TIMELINE</p></div><DialogTitle className="font-serif text-2xl font-bold tracking-tight">{selectedNote.title} 的修改歷史</DialogTitle><DialogDescription className="leading-6 text-slate-600">快照保存在目前瀏覽器；還原採「複製內容」流程，不會直接覆寫 `client/src/content/`。</DialogDescription></DialogHeader>
-          <div className="grid gap-4 px-6 py-5 md:grid-cols-[230px_minmax(0,1fr)] sm:px-8"><aside className="space-y-2">{noteRevisions.map((revision) => <button key={revision.id} type="button" onClick={() => setSelectedRevisionId(revision.id)} className={`w-full rounded-md border p-3 text-left ${selectedRevisionId === revision.id ? "border-teal-700 bg-teal-700/[0.09]" : "border-slate-950/10 bg-white/65"}`}><span className="font-mono text-[10px] font-bold text-teal-800">v{revision.revisionNumber} · {revision.source === "baseline" ? "BASELINE" : "CHANGE"}</span><span className="mt-1 block text-sm font-semibold">{new Intl.DateTimeFormat("zh-TW", { dateStyle: "short", timeStyle: "short" }).format(new Date(revision.savedAt))}</span></button>)}</aside>{noteRevisions.filter((revision) => revision.id === selectedRevisionId).map((revision) => { const diff = summarizeRevisionDiff(selectedNote.body, revision.content); return <section key={revision.id}><div className="rounded-md border border-teal-800/15 bg-teal-700/[0.05] p-3 text-sm"><p className="section-label text-teal-800">SAFE RESTORE SUMMARY</p><p className="mt-1 font-semibold">{diff.changed ? `相對目前版本：${diff.addedLines} 行新增、${diff.removedLines} 行移除` : "這是目前內容的相同快照。"}</p><p className="mt-1 text-xs text-slate-600">舊版 {diff.revisionLines} 行 · 目前 {diff.currentLines} 行</p></div><pre className="mt-3 max-h-[42vh] overflow-auto rounded-md border border-slate-950/15 bg-slate-950 p-4 text-xs leading-6 text-slate-100"><code>{revision.content}</code></pre><button type="button" onClick={() => copyRevision(revision)} className="primary-stamp mt-3"><Clipboard className="h-4 w-4" />複製 v{revision.revisionNumber} 還原內容</button></section>; })}</div>
-          <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-4 sm:px-8"><span className="mr-auto text-xs text-slate-600">{historyMessage || "長期檔案版本請在 Windows 專案使用 Git；瀏覽器快照不會跨裝置同步。"}</span><DialogClose className="rounded-md border border-slate-950/15 bg-white px-3 py-2 text-sm font-semibold">關閉</DialogClose></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RevisionWorkspace note={selectedNote} open={historyOpen} onOpenChange={setHistoryOpen} />
 
-      <Dialog open={editorOpen} onOpenChange={(next) => { if (!next && editorDirty) { setEditorCloseConfirm(true); return; } setEditorOpen(next); if (!next && editorHasSaved) window.setTimeout(() => location.reload(), 140); }}><DialogContent className="max-h-[calc(100vh-2rem)] max-w-7xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0"><DialogHeader className="border-b border-slate-950/10 px-6 pb-4 pt-6"><DialogTitle className="font-serif text-2xl font-bold">Markdown 編輯工作台 · 實體檔案模式</DialogTitle><DialogDescription>停止輸入約 1.2 秒後會安全自動保存；Ctrl+S 可立即保存。每次寫入都會比對磁碟版本、建立備份，關閉工作台後才重新載入全域索引。</DialogDescription></DialogHeader><div className="p-4"><MarkdownEditor note={selectedNote} onDirtyChange={setEditorDirty} onSaved={() => setEditorHasSaved(true)} onOpenNote={(note) => { setEditorOpen(false); openWikiNote(note); }} /></div></DialogContent></Dialog>
+      <Dialog open={editorOpen} onOpenChange={(next) => { if (!next && editorDirty) { setEditorCloseConfirm(true); return; } setEditorOpen(next); if (!next && editorHasSaved) window.setTimeout(() => location.reload(), 140); }}><DialogContent className="max-h-[calc(100vh-2rem)] sm:max-w-7xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0"><DialogHeader className="border-b border-slate-950/10 px-6 pb-4 pt-6"><DialogTitle className="font-serif text-2xl font-bold">Markdown 編輯工作台 · 實體檔案模式</DialogTitle><DialogDescription>停止輸入約 1.2 秒後會安全自動保存；Ctrl+S 可立即保存。每次寫入都會比對磁碟版本、建立備份，關閉工作台後才重新載入全域索引。</DialogDescription></DialogHeader><div className="p-4"><MarkdownEditor note={selectedNote} onDirtyChange={setEditorDirty} onSaved={() => setEditorHasSaved(true)} onOpenNote={(note) => { setEditorOpen(false); openWikiNote(note); }} /></div></DialogContent></Dialog>
       <AlertDialog open={editorCloseConfirm} onOpenChange={setEditorCloseConfirm}><AlertDialogContent className="border-slate-950/20 bg-[#fffdf7] text-slate-950"><AlertDialogHeader><AlertDialogTitle>尚有尚未保存的 Markdown 內容</AlertDialogTitle><AlertDialogDescription>再等候約 1.2 秒可讓自動保存完成，或按下「放棄未保存內容」關閉工作台。這不會刪除先前已寫入實體檔的版本。</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>繼續編輯</AlertDialogCancel><AlertDialogAction onClick={() => { setEditorCloseConfirm(false); setEditorDirty(false); setEditorOpen(false); if (editorHasSaved) window.setTimeout(() => location.reload(), 140); }} className="bg-amber-700 text-white hover:bg-amber-800">放棄未保存內容</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 
       <Dialog open={quickSearchOpen} onOpenChange={setQuickSearchOpen}>
