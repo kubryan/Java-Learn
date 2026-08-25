@@ -297,6 +297,22 @@ export async function addCustomKnowledge(input: CustomKnowledgeInput): Promise<K
   return record;
 }
 
+export async function getCustomKnowledgeRecords() {
+  return (await readAllRecords()).filter((record) => record.kind === "custom" && record.origin === "local");
+}
+
+export async function replaceCustomKnowledgeRecords(records: KnowledgeRecord[]) {
+  const validRecords = records.filter((record) => record.kind === "custom" && record.origin === "local" && Boolean(record.id) && Boolean(record.title) && Boolean(record.content));
+  const database = await openDatabase();
+  const transaction = database.transaction(RECORDS_STORE, "readwrite");
+  const store = transaction.objectStore(RECORDS_STORE);
+  const existing = await requestValue(store.getAll()) as KnowledgeRecord[];
+  existing.filter((record) => record.kind === "custom").forEach((record) => store.delete(record.id));
+  validRecords.forEach((record) => store.put(record));
+  await transactionDone(transaction);
+  return validRecords.length;
+}
+
 function scoreRecord(record: KnowledgeRecord, query: string) {
   const normalizedQuery = normalize(query);
   const tokens = searchTokens(query);

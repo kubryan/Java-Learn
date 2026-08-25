@@ -46,13 +46,15 @@
     background-image: linear-gradient(rgba(25, 57, 84, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(25, 57, 84, 0.045) 1px, transparent 1px);
     background-size: 26px 26px;
   }
-  .workbench-panel { @apply rounded-md border border-slate-950/15 bg-[#fffdf7]/90 shadow-[0_12px_28px_rgba(23,38,58,0.055)]; }
+  .workbench-panel { position: relative; @apply rounded-sm border border-slate-950/15 bg-[#fffdf7]/90 shadow-[0_12px_28px_rgba(23,38,58,0.055)]; }
+  .workbench-panel::before { content: ""; position: absolute; z-index: 2; top: -1px; left: 14px; width: 42px; border-top: 3px solid #17263a; }
   .section-label { @apply font-mono text-[10px] font-semibold tracking-[0.16em] text-slate-500; }
   .header-brand { position: relative; }
   .brand-mark { filter: drop-shadow(0 2px 0 rgba(23,38,58,.12)); }
   .brand-metadata { color: #50667a; }
   .wordmark-lockup { @apply flex items-baseline gap-1 font-serif text-[1.2rem] font-black leading-none tracking-[0.045em] text-slate-950; }
-  .brand-wordmark { font-size: clamp(1.25rem, 2vw, 1.5rem); letter-spacing: .06em; }
+  .brand-wordmark { position: relative; font-size: clamp(1.25rem, 2vw, 1.5rem); letter-spacing: .06em; }
+  .brand-wordmark::after { content: "J-00"; margin-left: .5rem; color: #50667a; font-family: "IBM Plex Mono", monospace; font-size: .34em; font-weight: 700; letter-spacing: .16em; vertical-align: middle; }
   .wordmark-java { @apply font-mono text-[0.8em] font-bold tracking-[0.13em] text-teal-800; }
   .wordmark-divider { @apply -mx-0.5 font-mono text-[0.78em] text-amber-700; }
   .verification-dot { @apply h-2 w-2 rounded-full bg-teal-600 shadow-[0_0_0_4px_rgba(15,157,138,0.13)]; }
@@ -82,8 +84,9 @@
   .route-path-ruler span:first-child { @apply border-teal-700 bg-teal-700 text-white; }
   .route-path-ruler b { @apply text-sm font-normal text-slate-700; }
   .route-module-grid { @apply relative; }
-  .route-module-grid::before { content: ""; position: absolute; z-index: 0; top: 39px; left: 8%; right: 8%; border-top: 1px dashed rgba(23,38,58,.48); }
-  .track-card { @apply relative overflow-hidden rounded-md border border-slate-950/15 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_25px_rgba(23,38,58,0.14)] focus-visible:ring-2 focus-visible:ring-teal-600; }
+  .route-module-grid::before { content: "COMMON CORE  ───────────  BRANCH"; position: absolute; z-index: 0; top: 28px; left: 8%; right: 8%; color: #50667a; font-family: "IBM Plex Mono", monospace; font-size: 8px; font-weight: 700; letter-spacing: .11em; text-align: center; }
+  .route-module-grid::after { content: ""; position: absolute; z-index: 0; top: 39px; left: 8%; right: 8%; border-top: 2px dashed rgba(23,38,58,.56); }
+  .track-card { @apply relative overflow-hidden rounded-sm border border-slate-950/15 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_25px_rgba(23,38,58,0.14)] focus-visible:ring-2 focus-visible:ring-teal-600; }
   .track-card::before { content: ""; position: absolute; z-index: 5; left: 0; top: 0; width: 100%; height: 5px; background: repeating-linear-gradient(90deg, #17263a 0 14px, transparent 14px 21px); opacity: .95; }
   .route-path-stop:first-child::before { background: repeating-linear-gradient(90deg, #0f9d8a 0 14px, transparent 14px 21px); }
   .track-card:not(:last-child)::after { content: "→"; position: absolute; z-index: 10; top: 27px; right: -19px; display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid rgba(23,38,58,.32); background: #fffdf7; color: #17263a; font-family: "IBM Plex Mono", monospace; font-size: 12px; box-shadow: 0 0 0 3px rgba(248,244,233,.94); }
@@ -95,6 +98,11 @@
   .route-path-stop:first-child .route-anchor { @apply border-teal-800/40 text-teal-900; }
   .route-path-stop:first-child .route-anchor i { @apply bg-teal-700; }
   .route-status { @apply rounded-sm bg-slate-900/[0.08] px-1.5 py-1 font-mono text-[9px] font-semibold tracking-[0.06em] text-slate-700; }
+  .current-note-canvas::after { content: "CURRENT COORDINATE  ·  VERIFY → PRACTICE → RECORD"; position: absolute; z-index: 1; right: 20px; top: 72px; color: rgba(80,102,122,.48); font-family: "IBM Plex Mono", monospace; font-size: 8px; font-weight: 700; letter-spacing: .11em; writing-mode: vertical-rl; }
+  .current-note-canvas > * { position: relative; z-index: 2; }
+  .backup-index-card { position: relative; border: 1px solid rgba(23,38,58,.17); border-radius: 2px; background: #fffdf7; box-shadow: 7px 7px 0 rgba(23,38,58,.035); }
+  .backup-index-card::before { content: ""; position: absolute; top: 0; left: 14px; width: 34px; border-top: 3px solid #17263a; }
+  .backup-index-card::after { content: "ARCHIVE"; position: absolute; top: 11px; right: 12px; color: #50667a; font-family: "IBM Plex Mono", monospace; font-size: 8px; font-weight: 700; letter-spacing: .12em; }
   .completion-stamp { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-sm border border-teal-800 px-3 py-2 text-xs font-bold text-teal-800 transition duration-150 hover:bg-teal-700/10 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-teal-600; }
   .completion-stamp-done { @apply border-teal-700 bg-teal-700 text-white hover:bg-teal-800; }
   .note-tab { @apply inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-transparent px-2 py-1.5 text-xs text-slate-600 transition hover:bg-white hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-teal-600; }
@@ -158,6 +166,8 @@
   .reading-paper { font-size: 0.95rem; }
   .track-card:not(:last-child)::after { display: none; }
   .route-module-grid::before { display: none; }
+  .route-module-grid::after { display: none; }
+  .current-note-canvas::after { display: none; }
   .route-path-ruler { gap: .35rem; }
   .hero-schematic::before { right: -45%; }
   .schematic-code, .schematic-axis { display: none; }

@@ -125,6 +125,21 @@ export async function getNoteRevisions(slug: string) {
   return revisionsForNote(await readAllRevisions(), slug);
 }
 
+export async function getAllNoteRevisions() {
+  return readAllRevisions();
+}
+
+export async function replaceAllNoteRevisions(revisions: NoteRevision[]) {
+  const safeRevisions = revisions.filter((revision) => Boolean(revision.id) && Boolean(revision.noteSlug) && typeof revision.content === "string" && Boolean(revision.savedAt));
+  const database = await openHistoryDatabase();
+  const transaction = database.transaction(REVISIONS_STORE, "readwrite");
+  const store = transaction.objectStore(REVISIONS_STORE);
+  store.clear();
+  safeRevisions.forEach((revision) => store.put(revision));
+  await transactionDone(transaction);
+  return safeRevisions.length;
+}
+
 export async function getRecentMarkdownChanges(limit = 6) {
   return (await readAllRevisions())
     .filter((revision) => revision.source === "markdown-change")

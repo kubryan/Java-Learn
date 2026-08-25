@@ -18,12 +18,14 @@ import {
   Plus,
   Search,
   Server,
+  Settings,
   Sparkles,
   Star,
   Tags,
 } from "lucide-react";
 import { categories, notes, searchNotes, type Note } from "@/lib/notes";
 import { KnowledgeTree } from "@/components/KnowledgeTree";
+import { BackupCenter } from "@/components/BackupCenter";
 import { KnowledgeGraph } from "@/components/KnowledgeGraph";
 import { GitWorkspace } from "@/components/GitWorkspace";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
@@ -144,6 +146,7 @@ export default function Home() {
   const [knowledgeTags, setKnowledgeTags] = useState<KnowledgeTag[]>([]);
   const [tagOpen, setTagOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "graph");
+  const [backupOpen, setBackupOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "backup");
   const [gitOpen, setGitOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "git");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -423,10 +426,11 @@ export default function Home() {
               </h1>
             </div>
           </button>
-          <div className="flex shrink-0 gap-2 md:hidden"><button type="button" onClick={() => setGitOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-4 w-4" /></button><button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button></div>
+          <div className="flex shrink-0 gap-2 md:hidden"><button type="button" onClick={() => setBackupOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-4 w-4" /></button><button type="button" onClick={() => setGitOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-4 w-4" /></button><button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button></div>
           <div className="hidden items-center gap-3 text-xs text-slate-600 md:flex">
             <span className="inline-flex overflow-hidden rounded-md border border-slate-950/10 bg-white/65"><button type="button" onClick={() => setTheme?.("light")} className={`px-2 py-1.5 ${theme === "light" ? "bg-teal-700 text-white" : ""}`}>☀ Light</button><button type="button" onClick={() => setTheme?.("dark")} className={`px-2 py-1.5 ${theme === "dark" ? "bg-teal-700 text-white" : ""}`}>🌙 Dark</button><button type="button" onClick={() => setTheme?.("system")} className={`px-2 py-1.5 ${theme === "system" ? "bg-teal-700 text-white" : ""}`}>🖥 System</button></span>
             <button type="button" onClick={() => setGraphOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-3.5 w-3.5" />知識圖</button>
+            <button type="button" onClick={() => setBackupOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-3.5 w-3.5" />設定</button>
             <button type="button" onClick={() => setGitOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-3.5 w-3.5" />Git</button>
             <button type="button" onClick={openQuickSearch} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟快速全文搜尋">
               <Search className="h-3.5 w-3.5" />快速搜尋 <kbd className="rounded border border-slate-950/10 bg-[#f8f4e9] px-1 font-mono text-[10px]">Ctrl K</kbd>
@@ -437,6 +441,7 @@ export default function Home() {
         </div>
       </header>
 
+      <BackupCenter open={backupOpen} onOpenChange={setBackupOpen} />
       <GitWorkspace open={gitOpen} onOpenChange={setGitOpen} />
 
       <Dialog open={graphOpen} onOpenChange={setGraphOpen}>
@@ -677,7 +682,7 @@ export default function Home() {
             </>
           )}
 
-          <section className="workbench-panel overflow-hidden">
+          <section className="workbench-panel current-note-canvas overflow-hidden">
             <div className="dark-surface-raised flex flex-col gap-4 border-b border-slate-900/10 bg-[#fffdf7]/75 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div className="min-w-0">
                 <p className="section-label">CURRENT NOTE · {selectedNote.category.toUpperCase()}</p>

@@ -98,3 +98,11 @@ git config user.email "你的 GitHub 提交信箱"
 ```
 
 完成設定、重新執行 `pnpm dev` 後按「重新檢查」，就能看到 Markdown 變更。`Commit` 只建立本機版本；`Push` 會在另一個確認視窗中才推送目前分支到 `origin`。若 GitHub 要求登入，請在 Windows 的 Git Credential Manager 或 GitHub CLI 完成登入後再 Push。若這個遠端已經有不同歷史，請先以命令列檢查並整合歷史，**不要**在工作台中強制推送。
+
+## 匯出／還原瀏覽器本機資料
+
+頁首的「**設定**」會開啟備份中心。選擇「下載 JSON 備份」可保存這台電腦、這個瀏覽器中的自訂知識、收藏、閱讀進度、最近使用、Markdown 草稿與修改歷史。請把下載的 `JavaBase-backup-*.json` 放在 OneDrive、外接硬碟或其他不會隨瀏覽器資料一同清除的位置。
+
+還原時先選擇一份 JSON；系統會先檢查它是否為相容的 JavaBase 備份並列出筆數，只有按下「確認還原」才會替換瀏覽器資料。還原前會自動下載**目前資料的安全快照**，但它不會修改 `client\src\content\` 下的任何實體 Markdown。
+
+若你希望「新增知識」的 IndexedDB 內容也變成可編輯、可搜尋、可 Git 版控的檔案，選擇「匯出為 Markdown」。只在本機 `http://localhost:3000` 有效，會將資料依判斷分類寫入 `client\src\content\knowledge\Java`、`Minecraft`、`AI`、`Python` 或「其他」。同名檔案會保留原檔、不覆寫，且原來的 IndexedDB 知識會保留作為安全副本；匯出後再透過 Git 工作台查看並提交新的 `.md` 檔案。
