@@ -1,0 +1,112 @@
+/* Design reminder — 藍圖工作桌：暖白工程紙、深墨藍資訊字、驗證青綠狀態色與細緻藍圖格線。 */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@600;700;900&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Noto Sans TC", system-ui, sans-serif;
+  --font-serif: "Noto Serif TC", serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --background: #f8f4e9;
+  --foreground: #17263a;
+  --card: #fffdf7;
+  --card-foreground: #17263a;
+  --primary: #0f9d8a;
+  --primary-foreground: #f8f4e9;
+  --border: rgba(23, 38, 58, 0.16);
+  --ring: #0f9d8a;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { scroll-behavior: smooth; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+  button, input { font: inherit; }
+  button:not(:disabled), a[href] { @apply cursor-pointer; }
+  ::selection { background: rgba(15, 157, 138, 0.22); color: #17263a; }
+}
+
+@layer components {
+  .blueprint-shell {
+    background-color: #f8f4e9;
+    background-image: linear-gradient(rgba(25, 57, 84, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(25, 57, 84, 0.045) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+  .workbench-panel { @apply rounded-md border border-slate-950/15 bg-[#fffdf7]/90 shadow-[0_12px_28px_rgba(23,38,58,0.055)]; }
+  .section-label { @apply font-mono text-[10px] font-semibold tracking-[0.16em] text-slate-500; }
+  .wordmark-lockup { @apply flex items-baseline gap-1 font-serif text-[1.18rem] font-black leading-none tracking-[0.06em] text-slate-950; }
+  .wordmark-java { @apply font-mono text-[0.64em] font-semibold tracking-[0.18em] text-teal-800; }
+  .wordmark-divider { @apply -mx-0.5 font-mono text-[0.72em] text-amber-700; }
+  .verification-dot { @apply h-2 w-2 rounded-full bg-teal-600 shadow-[0_0_0_4px_rgba(15,157,138,0.13)]; }
+  .nav-row { @apply flex w-full items-center gap-2 rounded-md px-2.5 py-2.5 text-sm text-slate-700 transition duration-150 hover:bg-slate-900/[0.055] hover:text-slate-950 active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-teal-600; }
+  .nav-row-active { @apply bg-teal-700 text-[#f8f4e9] shadow-sm hover:bg-teal-800 hover:text-white; }
+  .nav-row-active span { @apply text-[#f8f4e9]; }
+  .hero-workbench { @apply relative min-h-[330px] rounded-md border border-slate-950/15 bg-[#dce3de] shadow-[0_15px_32px_rgba(23,38,58,0.09)]; }
+  .hero-photo { @apply absolute inset-0 h-full w-full object-cover object-center; }
+  .hero-copy { @apply relative min-h-[330px] max-w-[630px] border-r border-slate-950/10 bg-[#fffdf7]/[0.95] p-6 shadow-[16px_0_42px_rgba(23,38,58,0.08)] sm:p-9; }
+  .hero-copy::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .42; background-image: linear-gradient(90deg, transparent 0 94%, rgba(23,38,58,.08) 94% 95%, transparent 95%), linear-gradient(rgba(23,38,58,.06) 1px, transparent 1px); background-size: 100% 100%, 100% 32px; }
+  .hero-coordinate-rail { @apply absolute bottom-3 right-3 z-10 hidden items-center gap-2 rounded-sm border border-white/60 bg-slate-950/80 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.12em] text-[#f8f4e9] sm:flex; }
+  .hero-coordinate-rail i { @apply h-px w-3 bg-teal-300; }
+  .primary-stamp { @apply inline-flex items-center gap-2 rounded-sm bg-teal-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition duration-150 hover:bg-teal-800 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2; }
+  .route-module-grid { @apply relative; }
+  .track-card { @apply relative overflow-hidden rounded-md border border-slate-950/15 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_25px_rgba(23,38,58,0.14)] focus-visible:ring-2 focus-visible:ring-teal-600; }
+  .track-card::before { content: ""; position: absolute; z-index: 5; left: 0; top: 0; width: 100%; height: 5px; background: repeating-linear-gradient(90deg, #0f9d8a 0 14px, transparent 14px 21px); opacity: .95; }
+  .track-card:not(:last-child)::after { content: ""; position: absolute; z-index: 10; top: 44%; right: -17px; width: 16px; height: 1px; background: #0f9d8a; box-shadow: 0 0 0 3px rgba(248,244,233,.9); }
+  .track-card:not(:last-child)::selection { background: transparent; }
+  .track-card-image { @apply absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.035]; }
+  .route-coordinate { @apply rounded-sm border border-slate-900/15 bg-[#fbf7ee]/95 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.08em] text-slate-700; }
+  .route-status { @apply rounded-sm bg-teal-700/[0.1] px-1.5 py-1 font-mono text-[9px] font-semibold tracking-[0.06em] text-teal-900; }
+  .completion-stamp { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-sm border border-teal-800 px-3 py-2 text-xs font-bold text-teal-800 transition duration-150 hover:bg-teal-700/10 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-teal-600; }
+  .completion-stamp-done { @apply border-teal-700 bg-teal-700 text-white hover:bg-teal-800; }
+  .note-tab { @apply inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-transparent px-2 py-1.5 text-xs text-slate-600 transition hover:bg-white hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-teal-600; }
+  .note-tab-active { @apply border-slate-950/15 bg-white font-bold text-slate-950 shadow-sm; }
+  .reading-paper { @apply bg-[#fffdf7] text-[15px] leading-8 text-slate-700 sm:text-base; }
+  .reading-paper h1, .reading-paper h2, .reading-paper h3 { @apply scroll-mt-5 font-serif font-bold tracking-tight text-slate-950; }
+  .reading-paper h2 { @apply mt-9 border-b border-slate-950/15 pb-2 text-2xl; }
+  .reading-paper h3 { @apply mt-7 text-xl; }
+  .reading-paper p { @apply my-4; }
+  .reading-paper a { @apply font-medium text-teal-800 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-950; }
+  .reading-paper code { @apply rounded-sm bg-slate-900/[0.075] px-1.5 py-0.5 font-mono text-[0.84em] font-medium text-slate-800; }
+  .reading-paper pre { @apply overflow-x-auto rounded-md border border-slate-950/15 bg-slate-950 p-4 shadow-inner; }
+  .reading-paper pre code { @apply bg-transparent p-0 text-sm font-normal leading-7 text-slate-100; }
+  .reading-paper blockquote { @apply border-l-4 border-teal-700 bg-teal-700/[0.07] py-1 pl-4 font-serif text-slate-700; }
+  .reading-paper table { @apply my-6 w-full border-collapse overflow-hidden rounded-md text-sm; }
+  .reading-paper th { @apply bg-slate-950 px-3 py-2 text-left font-sans text-xs text-white; }
+  .reading-paper td { @apply border border-slate-950/15 px-3 py-2 align-top; }
+  .reading-paper ul, .reading-paper ol { @apply my-4 pl-6; }
+  .reading-paper li { @apply my-1.5; }
+  .coordinate-chip { @apply inline-flex h-7 min-w-7 items-center justify-center rounded-sm bg-slate-950 px-1.5 font-mono text-xs font-bold text-[#f8f4e9]; }
+  .tag-chip { @apply rounded-sm border border-teal-700/20 bg-teal-700/[0.07] px-2 py-1 font-mono text-[10px] font-medium text-teal-900; }
+  .locator-row { @apply flex w-full gap-2 rounded-sm px-2 py-1.5 text-left text-xs leading-5 text-slate-600 transition hover:bg-teal-700/[0.07] hover:text-teal-900 focus-visible:ring-2 focus-visible:ring-teal-600; }
+  .locator-row span:first-child { @apply shrink-0 font-mono text-[10px] text-teal-800; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-copy, .workbench-panel, .hero-workbench { animation: settle-in 300ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+  .workbench-panel:nth-of-type(2) { animation-delay: 50ms; }
+}
+
+@keyframes settle-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .hero-copy { min-height: 330px; max-width: 92%; }
+  .reading-paper { font-size: 0.95rem; }
+  .track-card:not(:last-child)::after { display: none; }
+}
