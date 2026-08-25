@@ -260,3 +260,148 @@
 .dark .blueprint-shell kbd { background: #263e53 !important; color: #edf8ff !important; border-color: rgba(186,230,253,.45) !important; }
 .dark .blueprint-shell ::selection { background: #f4c95d; color: #071018; text-shadow: none; }
 .dark .blueprint-shell pre::selection, .dark .blueprint-shell code::selection { background: #5eead4; color: #071018; }
+
+/* The Markdown editor is rendered through a Dialog portal, so it needs its own dark surface scope. */
+.dark .markdown-editor-dialog {
+  background: #0d1a28 !important;
+  color: #dbe7f0 !important;
+  border-color: rgba(176, 206, 224, .32) !important;
+}
+.dark .markdown-editor-dialog .markdown-editor-dialog-header {
+  background: #13263a !important;
+  border-color: rgba(176, 206, 224, .28) !important;
+}
+.dark .markdown-editor-dialog [data-slot="dialog-title"] {
+  color: #f4f8fb !important;
+}
+.dark .markdown-editor-dialog [data-slot="dialog-description"] {
+  color: #b9cad6 !important;
+}
+.dark .markdown-editor-dialog > button {
+  color: #dbeafe !important;
+}
+.dark .markdown-editor-dialog > button:hover {
+  background: #1d394f !important;
+  color: #ffffff !important;
+}
+.dark .markdown-editor {
+  border-color: rgba(176, 206, 224, .32) !important;
+}
+.dark .markdown-editor-source {
+  background: #07131f !important;
+  border-color: rgba(176, 206, 224, .26) !important;
+}
+.dark .markdown-editor-source > div:first-child button {
+  border-radius: .25rem;
+  color: #dbeafe !important;
+  background: transparent;
+}
+.dark .markdown-editor-source > div:first-child button:hover,
+.dark .markdown-editor-source > div:first-child button:focus-visible {
+  background: #1d394f !important;
+  color: #ffffff !important;
+}
+.dark .markdown-editor-source > div:first-child button:disabled {
+  color: #7890a2 !important;
+}
+.dark .markdown-editor-textarea {
+  color: #f1f7fb !important;
+  caret-color: #5eead4;
+}
+.dark .markdown-editor-preview {
+  background: #102235 !important;
+  color: #dbe7f0 !important;
+}
+.dark .markdown-editor-preview > .section-label {
+  color: #7ee6d8 !important;
+}
+.dark .markdown-editor-status {
+  background: #173249 !important;
+  color: #e6f4fb !important;
+  border-color: rgba(126, 230, 216, .38) !important;
+}
+.dark .markdown-editor-status svg {
+  color: #7ee6d8 !important;
+}
+.dark .markdown-editor-status button {
+  color: #fde68a !important;
+}
+.dark .markdown-editor-outline,
+.dark .markdown-editor-outline p {
+  color: #b9cad6 !important;
+}
+.dark .markdown-editor-article {
+  color: #dbe7f0 !important;
+}
+.dark .markdown-editor-article h1,
+.dark .markdown-editor-article h2,
+.dark .markdown-editor-article h3,
+.dark .markdown-editor-article strong {
+  color: #f4f8fb !important;
+}
+.dark .markdown-editor-article p,
+.dark .markdown-editor-article li,
+.dark .markdown-editor-article td {
+  color: #dbe7f0 !important;
+}
+.dark .markdown-editor-article a {
+  color: #7ee6d8 !important;
+  text-decoration-color: rgba(126, 230, 216, .55) !important;
+}
+.dark .markdown-editor-article code {
+  background: #07131f !important;
+  color: #c9f7ef !important;
+  border: 1px solid rgba(148, 210, 207, .24);
+}
+.dark .markdown-editor-article pre {
+  background: #0b1c2b !important;
+  border: 1px solid rgba(148, 210, 207, .42) !important;
+}
+.dark .markdown-editor-article pre code {
+  background: transparent !important;
+  border: 0;
+  color: #e6f4fb !important;
+}
+.dark .markdown-editor-article pre code span {
+  color: #dbeafe !important;
+}
+.dark .markdown-editor-article pre code span[style*="#d73a49"],
+.dark .markdown-editor-article pre code span[style*="#b31d28"] {
+  color: #ff8b86 !important;
+}
+.dark .markdown-editor-article pre code span[style*="#6f42c1"] {
+  color: #d8b4fe !important;
+}
+.dark .markdown-editor-article pre code span[style*="#005cc5"],
+.dark .markdown-editor-article pre code span[style*="#032f62"] {
+  color: #80caff !important;
+}
+.dark .markdown-editor-article pre code span[style*="#22863a"] {
+  color: #86efac !important;
+}
+.dark .markdown-editor-article pre code span[style*="#e36209"] {
+  color: #ffb36b !important;
+}
+.dark .markdown-editor-article blockquote {
+  background: #16364a !important;
+  border-color: #21b8a7 !important;
+  color: #d8e9f2 !important;
+}
+.dark .markdown-editor-article th {
+  background: #07131f !important;
+  color: #f4f8fb !important;
+}
+.dark .markdown-editor-article td {
+  background: #132b3e !important;
+  border-color: rgba(176, 206, 224, .28) !important;
+}
+.dark .markdown-editor-help {
+  background: #3a2b18 !important;
+  border-color: rgba(251, 191, 36, .42) !important;
+  color: #ffe7a6 !important;
+}
+.dark .markdown-editor-help code {
+  background: #211b13 !important;
+  color: #fff1bd !important;
+  border-color: rgba(251, 191, 36, .28) !important;
+}
