@@ -460,3 +460,55 @@
     overflow: auto;
   }
 }
+
+.markdown-editor-outline-item {
+  border-left: 2px solid transparent;
+  border-radius: .2rem;
+  padding: .3rem .45rem;
+  color: #50667a;
+  line-height: 1.45;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1), border-color 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.markdown-editor-outline-item:hover,
+.markdown-editor-outline-item:focus-visible {
+  background: rgba(15, 157, 138, .09);
+  border-left-color: rgba(15, 118, 110, .62);
+  color: #0f766e;
+  outline: none;
+}
+.markdown-editor-outline-item-active {
+  background: rgba(15, 157, 138, .13);
+  border-left-color: #0f9d8a;
+  color: #0f5f58;
+  font-weight: 700;
+}
+.markdown-editor-outline-number {
+  display: block;
+  margin-bottom: .12rem;
+  color: #0f766e;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+.markdown-editor-article h2,
+.markdown-editor-article h3 {
+  scroll-margin-top: 1rem;
+}
+.dark .markdown-editor-outline-item {
+  color: #b9cad6;
+}
+.dark .markdown-editor-outline-item:hover,
+.dark .markdown-editor-outline-item:focus-visible {
+  background: rgba(94, 234, 212, .14);
+  border-left-color: #5eead4;
+  color: #a7f3e8;
+}
+.dark .markdown-editor-outline-item-active {
+  background: rgba(94, 234, 212, .18);
+  border-left-color: #5eead4;
+  color: #e1fffa;
+}
+.dark .markdown-editor-outline-number {
+  color: #7ee6d8;
+}

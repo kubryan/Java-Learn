@@ -9,10 +9,36 @@ import { renderWikiSyntax, resolveWikiNote, wikiTargetFromHref } from "@/lib/wik
 type WikiMarkdownProps = {
   markdown: string;
   onOpenNote: (note: Note) => void;
+  headingIds?: string[];
 };
 
-export function WikiMarkdown({ markdown, onOpenNote }: WikiMarkdownProps) {
-  const components = useMemo(() => ({
+export function createHeadingIds(headings: string[]) {
+  const occurrences = new Map<string, number>();
+  return headings.map((heading) => {
+    const base = heading
+      .normalize("NFKC")
+      .replace(/[`*_~]/g, "")
+      .replace(/[^A-Za-z0-9\u3400-\u9fff]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase() || "section";
+    const occurrence = occurrences.get(base) ?? 0;
+    occurrences.set(base, occurrence + 1);
+    return occurrence ? `${base}-${occurrence + 1}` : base;
+  });
+}
+
+export function WikiMarkdown({ markdown, onOpenNote, headingIds }: WikiMarkdownProps) {
+  const components = useMemo(() => {
+    let headingIndex = 0;
+    const renderHeading = (level: 2 | 3, { children, ...props }: ComponentProps<"h2">) => {
+      const id = headingIds?.[headingIndex] ?? props.id ?? `section-${headingIndex + 1}`;
+      headingIndex += 1;
+      return level === 2 ? <h2 {...props} id={id}>{children}</h2> : <h3 {...props} id={id}>{children}</h3>;
+    };
+
+    return {
+    h2: (props: ComponentProps<"h2">) => renderHeading(2, props),
+    h3: (props: ComponentProps<"h3">) => renderHeading(3, props),
     a: ({ href, children, ...props }: ComponentProps<"a">) => {
       const target = wikiTargetFromHref(href);
       if (!target) return <a href={href} {...props}>{children}</a>;
@@ -38,7 +64,8 @@ export function WikiMarkdown({ markdown, onOpenNote }: WikiMarkdownProps) {
         </a>
       );
     },
-  }), [onOpenNote]);
+    };
+  }, [headingIds, markdown, onOpenNote]);
 
   return <Streamdown components={components}>{renderWikiSyntax(markdown)}</Streamdown>;
 }

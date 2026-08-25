@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type
 import { AlertCircle, Bold, Check, CloudUpload, Code2, ImagePlus, Italic, Link, RotateCcw, Save, Table2 } from "lucide-react";
 import type { Note } from "@/lib/notes";
 import { recordNoteRevision } from "@/lib/note-history";
-import { WikiMarkdown } from "./WikiMarkdown";
+import { createHeadingIds, WikiMarkdown } from "./WikiMarkdown";
 
 type DiskNote = { content: string; hash: string; modifiedAt: string };
 type SavePhase = "loading" | "saved" | "editing" | "saving" | "conflict" | "error" | "unavailable";
@@ -17,6 +17,7 @@ export function MarkdownEditor({ note, onOpenNote, onDirtyChange, onSaved }: { n
   const [phase, setPhase] = useState<SavePhase>("loading");
   const [lastSavedAt, setLastSavedAt] = useState("");
   const [reloadNonce, setReloadNonce] = useState(0);
+  const [activeHeadingIndex, setActiveHeadingIndex] = useState(0);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const previewScroll = useRef<HTMLDivElement>(null);
   const scrollSyncIgnore = useRef<"editor" | "preview" | null>(null);
@@ -90,6 +91,7 @@ export function MarkdownEditor({ note, onOpenNote, onDirtyChange, onSaved }: { n
 
   const previewMarkdown = useMemo(() => draft.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, ""), [draft]);
   const headings = useMemo(() => Array.from(previewMarkdown.matchAll(/^#{2,3}\s+(.+)$/gm), (match) => match[1]), [previewMarkdown]);
+  const headingIds = useMemo(() => createHeadingIds(headings), [headings]);
   function insert(before: string, after = "") { const target = textarea.current; const start = target?.selectionStart ?? draft.length; const end = target?.selectionEnd ?? start; setDraftValue(`${draft.slice(0, start)}${before}${draft.slice(start, end)}${after}${draft.slice(end)}`); requestAnimationFrame(() => textarea.current?.focus()); }
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); void saveNow("manual"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") { event.preventDefault(); insert("**", "**"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") { event.preventDefault(); insert("*", "*"); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); insert("[", "](https://)"); } }
   function onDrop(event: DragEvent<HTMLTextAreaElement>) { event.preventDefault(); const file = event.dataTransfer.files[0]; if (file?.type.startsWith("image/")) insert(`![${file.name}](./images/${file.name})`); }
@@ -106,7 +108,28 @@ export function MarkdownEditor({ note, onOpenNote, onDirtyChange, onSaved }: { n
     const target = previewScroll.current;
     if (target && textarea.current) syncScroll(textarea.current, target, "preview");
   }
+  function updateActiveHeading() {
+    const container = previewScroll.current;
+    if (!container) return;
+    const headingElements = Array.from(container.querySelectorAll<HTMLElement>(".markdown-editor-article h2, .markdown-editor-article h3"));
+    if (!headingElements.length) return setActiveHeadingIndex(0);
+    const threshold = container.getBoundingClientRect().top + 72;
+    let nextIndex = 0;
+    headingElements.forEach((heading, index) => {
+      if (heading.getBoundingClientRect().top <= threshold) nextIndex = index;
+    });
+    setActiveHeadingIndex(nextIndex);
+  }
+  function jumpToHeading(index: number) {
+    const container = previewScroll.current;
+    const heading = container?.querySelectorAll<HTMLElement>(".markdown-editor-article h2, .markdown-editor-article h3")[index];
+    if (!container || !heading) return;
+    const top = Math.max(0, heading.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - 18);
+    setActiveHeadingIndex(index);
+    container.scrollTo({ top, behavior: "smooth" });
+  }
   function onPreviewScroll() {
+    updateActiveHeading();
     if (scrollSyncIgnore.current === "preview") { scrollSyncIgnore.current = null; return; }
     const source = textarea.current;
     const target = previewScroll.current;
@@ -115,5 +138,5 @@ export function MarkdownEditor({ note, onOpenNote, onDirtyChange, onSaved }: { n
   const statusIcon = phase === "saved" ? <Check className="h-3.5 w-3.5 text-teal-700" /> : phase === "saving" ? <CloudUpload className="h-3.5 w-3.5 animate-pulse text-teal-700" /> : phase === "conflict" || phase === "error" || phase === "unavailable" ? <AlertCircle className="h-3.5 w-3.5 text-amber-700" /> : null;
   const statusTone = phase === "conflict" || phase === "error" || phase === "unavailable" ? "border-amber-700/25 bg-amber-50 text-amber-950" : phase === "saved" ? "border-teal-700/20 bg-teal-700/[0.06] text-teal-950" : "border-slate-950/10 bg-slate-950/[0.035] text-slate-700";
 
-  return <div className="markdown-editor grid min-h-[64vh] gap-0 overflow-hidden rounded-sm border border-slate-950/15 lg:grid-cols-2"><section className="markdown-editor-source border-b border-slate-950/15 bg-slate-950 p-3 lg:border-b-0 lg:border-r"><div className="mb-2 flex flex-wrap gap-1"><button type="button" onClick={() => insert("**", "**")} aria-label="粗體"><Bold /></button><button type="button" onClick={() => insert("*", "*")} aria-label="斜體"><Italic /></button><button type="button" onClick={() => insert("[", "](https://)")} aria-label="連結"><Link /></button><button type="button" onClick={() => insert("\n| 欄位 | 內容 |\n|---|---|\n| | |\n")} aria-label="表格"><Table2 /></button><button type="button" onClick={() => insert("\n```java\n\n```\n")} aria-label="程式碼區塊"><Code2 /></button><button type="button" onClick={() => insert("\n```mermaid\ngraph TD\n  A[Start] --> B[Note]\n```\n")} aria-label="Mermaid 圖"><ImagePlus /></button><button type="button" onClick={() => void saveNow("manual")} disabled={phase === "saving" || !hash} className="ml-auto inline-flex items-center gap-1"><Save />{phase === "saving" ? "寫入中…" : "Ctrl+S 立即保存"}</button></div><textarea ref={textarea} value={draft} onChange={(event) => setDraftValue(event.target.value)} onKeyDown={onKeyDown} onDrop={onDrop} onDragOver={(event) => event.preventDefault()} onScroll={onEditorScroll} className="markdown-editor-textarea h-[56vh] w-full resize-none bg-transparent font-mono text-sm leading-6 text-slate-100 outline-none" aria-label="實體 Markdown 編輯器" /></section><section ref={previewScroll} onScroll={onPreviewScroll} className="markdown-editor-preview overflow-auto bg-[#fffdf7] p-5"><p className="section-label text-teal-800">PREVIEW · PHYSICAL MARKDOWN <span className="markdown-sync-badge">↕ SYNCED SCROLL</span></p><div role="status" aria-live="polite" className={`markdown-editor-status mt-2 flex items-start gap-1.5 rounded-sm border px-2 py-1.5 text-xs leading-5 ${statusTone}`}>{statusIcon}<span>{status}</span>{phase === "conflict" && <button type="button" onClick={() => setReloadNonce((value) => value + 1)} className="ml-auto inline-flex shrink-0 items-center gap-1 font-bold text-amber-900 underline underline-offset-2"><RotateCcw className="h-3.5 w-3.5" />重新載入磁碟版本</button>}</div><div className="mt-3 flex gap-3"><aside className="markdown-editor-outline hidden w-36 shrink-0 text-xs text-slate-500 sm:block">{headings.map((heading) => <p key={heading} className="mb-2">{heading}</p>)}</aside><article className="markdown-editor-article min-w-0 flex-1 prose prose-slate max-w-none"><WikiMarkdown markdown={previewMarkdown} onOpenNote={onOpenNote} /></article></div><p className="markdown-editor-help mt-6 rounded-sm border border-amber-700/20 bg-amber-50 p-3 text-xs text-amber-950">停止輸入約 1.2 秒後會自動保存至實體 `.md`；Ctrl+S 可立即保存。每次寫入都會比對磁碟版本並建立本機備份。拖放圖片只插入 `./images/檔名` 語法；請將實體圖片放入筆記相對應的 images 資料夾。</p></section></div>;
+  return <div className="markdown-editor grid min-h-[64vh] gap-0 overflow-hidden rounded-sm border border-slate-950/15 lg:grid-cols-2"><section className="markdown-editor-source border-b border-slate-950/15 bg-slate-950 p-3 lg:border-b-0 lg:border-r"><div className="mb-2 flex flex-wrap gap-1"><button type="button" onClick={() => insert("**", "**")} aria-label="粗體"><Bold /></button><button type="button" onClick={() => insert("*", "*")} aria-label="斜體"><Italic /></button><button type="button" onClick={() => insert("[", "](https://)")} aria-label="連結"><Link /></button><button type="button" onClick={() => insert("\n| 欄位 | 內容 |\n|---|---|\n| | |\n")} aria-label="表格"><Table2 /></button><button type="button" onClick={() => insert("\n```java\n\n```\n")} aria-label="程式碼區塊"><Code2 /></button><button type="button" onClick={() => insert("\n```mermaid\ngraph TD\n  A[Start] --> B[Note]\n```\n")} aria-label="Mermaid 圖"><ImagePlus /></button><button type="button" onClick={() => void saveNow("manual")} disabled={phase === "saving" || !hash} className="ml-auto inline-flex items-center gap-1"><Save />{phase === "saving" ? "寫入中…" : "Ctrl+S 立即保存"}</button></div><textarea ref={textarea} value={draft} onChange={(event) => setDraftValue(event.target.value)} onKeyDown={onKeyDown} onDrop={onDrop} onDragOver={(event) => event.preventDefault()} onScroll={onEditorScroll} className="markdown-editor-textarea h-[56vh] w-full resize-none bg-transparent font-mono text-sm leading-6 text-slate-100 outline-none" aria-label="實體 Markdown 編輯器" /></section><section ref={previewScroll} onScroll={onPreviewScroll} className="markdown-editor-preview overflow-auto bg-[#fffdf7] p-5"><p className="section-label text-teal-800">PREVIEW · PHYSICAL MARKDOWN <span className="markdown-sync-badge">↕ SYNCED SCROLL</span></p><div role="status" aria-live="polite" className={`markdown-editor-status mt-2 flex items-start gap-1.5 rounded-sm border px-2 py-1.5 text-xs leading-5 ${statusTone}`}>{statusIcon}<span>{status}</span>{phase === "conflict" && <button type="button" onClick={() => setReloadNonce((value) => value + 1)} className="ml-auto inline-flex shrink-0 items-center gap-1 font-bold text-amber-900 underline underline-offset-2"><RotateCcw className="h-3.5 w-3.5" />重新載入磁碟版本</button>}</div><div className="mt-3 flex gap-3"><aside className="markdown-editor-outline hidden w-36 shrink-0 text-xs text-slate-500 sm:block">{headings.map((heading, index) => <button key={`${heading}-${index}`} type="button" onClick={() => jumpToHeading(index)} aria-current={activeHeadingIndex === index ? "location" : undefined} className={`markdown-editor-outline-item mb-2 block w-full text-left ${activeHeadingIndex === index ? "markdown-editor-outline-item-active" : ""}`}><span className="markdown-editor-outline-number">{String(index + 1).padStart(2, "0")}</span><span>{heading}</span></button>)}</aside><article className="markdown-editor-article min-w-0 flex-1 prose prose-slate max-w-none"><WikiMarkdown markdown={previewMarkdown} headingIds={headingIds} onOpenNote={onOpenNote} /></article></div><p className="markdown-editor-help mt-6 rounded-sm border border-amber-700/20 bg-amber-50 p-3 text-xs text-amber-950">停止輸入約 1.2 秒後會自動保存至實體 `.md`；Ctrl+S 可立即保存。每次寫入都會比對磁碟版本並建立本機備份。拖放圖片只插入 `./images/檔名` 語法；請將實體圖片放入筆記相對應的 images 資料夾。</p></section></div>;
 }
