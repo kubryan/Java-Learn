@@ -147,17 +147,60 @@
   .schematic-code, .schematic-axis { display: none; }
 }
 
-.dark .blueprint-shell { background: #101923; color: #e7edf2; background-image: linear-gradient(rgba(94,234,212,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(94,234,212,.06) 1px, transparent 1px); }
-.dark .blueprint-shell .bg-\[\#f8f4e9\], .dark .blueprint-shell .bg-\[\#fffdf7\], .dark .blueprint-shell .reading-paper, .dark .blueprint-shell .hero-copy { background-color: #172330 !important; color: #e7edf2 !important; }
-.dark .blueprint-shell .text-slate-950, .dark .blueprint-shell .text-slate-700, .dark .blueprint-shell .text-slate-600 { color: #d7e2ea !important; }
-.dark .blueprint-shell pre, .dark .blueprint-shell code { background-color: #071018; color: #d8f7ef; }
-.dark .blueprint-shell header { background: rgba(16,25,35,.94) !important; }
-.dark body, .dark #root { background: #101923; color: #e7edf2; }
-.dark .blueprint-shell .bg-white, .dark .blueprint-shell .bg-white\/70, .dark .blueprint-shell .bg-white\/65, .dark .blueprint-shell .workbench-panel, .dark .blueprint-shell .border-slate-950\/10 { background-color: #172330 !important; color: #e7edf2 !important; }
-.dark .blueprint-shell .text-slate-500, .dark .blueprint-shell .text-slate-400, .dark .blueprint-shell .text-teal-950, .dark .blueprint-shell .text-slate-700 { color: #c9d8e4 !important; }
-.dark .blueprint-shell button:not(.bg-teal-700), .dark .blueprint-shell input, .dark .blueprint-shell textarea { color: #e7edf2; }
-.dark .blueprint-shell .bg-teal-700 { color: #f6fffd !important; }
-.dark .blueprint-shell .hover\:bg-teal-700\/\[\.07\]:hover { background-color: rgba(94, 234, 212, .12) !important; }
+.dark body, .dark #root { background: #091420; color: #eaf2f8; }
+.dark .blueprint-shell {
+  --night-canvas: #0d1a28;
+  --night-surface: #13263a;
+  --night-surface-raised: #193148;
+  --night-surface-soft: #1d394f;
+  --night-text-strong: #f4f8fb;
+  --night-text: #d3e0ea;
+  --night-text-muted: #a9bfce;
+  --night-border: rgba(176, 206, 224, .28);
+  background: var(--night-canvas);
+  color: var(--night-text);
+  background-image: linear-gradient(rgba(94,234,212,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(94,234,212,.055) 1px, transparent 1px);
+}
+.dark .blueprint-shell header { background: rgba(9,20,32,.96) !important; border-color: var(--night-border) !important; }
+.dark .blueprint-shell .workbench-panel, .dark .blueprint-shell .dark-surface { background: var(--night-surface) !important; color: var(--night-text) !important; border-color: var(--night-border) !important; }
+.dark .blueprint-shell .dark-surface-raised, .dark .blueprint-shell .bg-white, .dark .blueprint-shell .bg-white\/65, .dark .blueprint-shell .bg-white\/70 { background: var(--night-surface-raised) !important; color: var(--night-text) !important; border-color: var(--night-border) !important; }
+.dark .blueprint-shell .text-slate-950, .dark .blueprint-shell .text-slate-800, .dark .blueprint-shell .text-slate-700 { color: var(--night-text-strong) !important; }
+.dark .blueprint-shell .text-slate-600, .dark .blueprint-shell .text-slate-500, .dark .blueprint-shell .text-slate-400 { color: var(--night-text-muted) !important; }
+.dark .blueprint-shell .text-teal-950, .dark .blueprint-shell .text-teal-900 { color: #a7f3e8 !important; }
+.dark .blueprint-shell .border-slate-950\/10, .dark .blueprint-shell .border-slate-950\/15, .dark .blueprint-shell .border-slate-950\/20 { border-color: var(--night-border) !important; }
+.dark .blueprint-shell .bg-\[\#f8f4e9\], .dark .blueprint-shell .bg-\[\#fffdf7\], .dark .blueprint-shell .reading-paper, .dark .blueprint-shell .hero-copy { background-color: var(--night-surface) !important; color: var(--night-text) !important; }
+.dark .blueprint-shell .bg-teal-700 { color: #f4fffd !important; }
+.dark .blueprint-shell .hover\:bg-teal-700\/\[\.07\]:hover { background-color: rgba(94, 234, 212, .14) !important; }
+.dark .blueprint-shell .dark-recent-item { color: var(--night-text-strong) !important; }
+.dark .blueprint-shell .dark-recent-item:hover { color: #5eead4 !important; }
+.dark .blueprint-shell .dark-route-copy { background: rgba(10, 24, 37, .96) !important; color: var(--night-text) !important; border: 1px solid rgba(186, 230, 253, .22); box-shadow: 0 10px 24px rgba(0, 0, 0, .26); }
+.dark .blueprint-shell .dark-route-copy h3 { color: var(--night-text-strong) !important; }
+.dark .blueprint-shell .dark-route-copy .route-coordinate, .dark .blueprint-shell .dark-route-copy .route-anchor, .dark .blueprint-shell .dark-route-copy .route-status { background: #1e3a4d !important; border-color: rgba(148, 210, 207, .34) !important; color: #baf7ee !important; }
+.dark .blueprint-shell .completion-stamp { background: #183349 !important; color: #baf7ee !important; border-color: rgba(94,234,212,.52) !important; }
+.dark .blueprint-shell .completion-stamp:hover { background: #23516a !important; color: #f4fffd !important; }
+.dark .blueprint-shell .completion-stamp-done { background: #0f766e !important; color: #f4fffd !important; }
+.dark .blueprint-shell .note-tab { color: var(--night-text-muted) !important; }
+.dark .blueprint-shell .note-tab:hover, .dark .blueprint-shell .note-tab-active { background: #29475b !important; color: var(--night-text-strong) !important; border-color: var(--night-border) !important; }
+.dark .blueprint-shell .reading-paper { background: #102235 !important; color: var(--night-text) !important; }
+.dark .blueprint-shell .reading-paper h1, .dark .blueprint-shell .reading-paper h2, .dark .blueprint-shell .reading-paper h3, .dark .blueprint-shell .reading-paper strong { color: var(--night-text-strong) !important; }
+.dark .blueprint-shell .reading-paper h2 { border-color: var(--night-border) !important; }
+.dark .blueprint-shell .reading-paper p, .dark .blueprint-shell .reading-paper li, .dark .blueprint-shell .reading-paper td { color: var(--night-text) !important; }
+.dark .blueprint-shell .reading-paper a { color: #7ee6d8 !important; text-decoration-color: rgba(126,230,216,.55) !important; }
+.dark .blueprint-shell .reading-paper .wiki-link { background: rgba(94,234,212,.13) !important; color: #baf7ee !important; border-color: rgba(94,234,212,.62) !important; }
+.dark .blueprint-shell .reading-paper .wiki-link::before { color: #7ee6d8 !important; }
+.dark .blueprint-shell .reading-paper .wiki-link-missing { background: rgba(251,191,36,.16) !important; color: #fde9a4 !important; border-color: rgba(251,191,36,.62) !important; }
+.dark .blueprint-shell .reading-paper code { background: #07131f !important; color: #c9f7ef !important; border: 1px solid rgba(148, 210, 207, .18); }
+.dark .blueprint-shell .reading-paper pre { background: #060f19 !important; border-color: rgba(148,210,207,.28) !important; }
+.dark .blueprint-shell .reading-paper pre code { background: transparent !important; border: 0; color: #d9f7f1 !important; }
+.dark .blueprint-shell .reading-paper blockquote { background: #16364a !important; border-color: #21b8a7 !important; color: #d8e9f2 !important; }
+.dark .blueprint-shell .reading-paper table { border-color: var(--night-border) !important; }
+.dark .blueprint-shell .reading-paper th { background: #07131f !important; color: #f4f8fb !important; }
+.dark .blueprint-shell .reading-paper td { background: #132b3e !important; border-color: var(--night-border) !important; }
+.dark .blueprint-shell .reading-paper tr:nth-child(even) td { background: #10263a !important; }
+.dark .blueprint-shell .reading-paper hr { border-color: var(--night-border) !important; }
+.dark .blueprint-shell .tag-chip { background: #1d4554 !important; color: #baf7ee !important; border-color: rgba(94,234,212,.36) !important; }
+.dark .blueprint-shell input, .dark .blueprint-shell textarea, .dark .blueprint-shell select { background: #0b1724 !important; color: var(--night-text-strong) !important; border-color: rgba(176, 206, 224, .42) !important; }
+.dark .blueprint-shell input::placeholder, .dark .blueprint-shell textarea::placeholder { color: #b5c7d5 !important; opacity: 1; }
+.dark .blueprint-shell kbd { background: #263e53 !important; color: #edf8ff !important; border-color: rgba(186,230,253,.45) !important; }
 .dark .blueprint-shell ::selection { background: #f4c95d; color: #071018; text-shadow: none; }
 .dark .blueprint-shell pre::selection, .dark .blueprint-shell code::selection { background: #5eead4; color: #071018; }
-.dark .blueprint-shell .bg-slate-950 ::selection { background: #f4c95d; color: #071018; }
