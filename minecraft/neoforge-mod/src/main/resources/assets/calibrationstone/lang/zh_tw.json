@@ -1,0 +1,4 @@
+{
+  "item.calibrationstone.calibration_stone": "校準石",
+  "message.calibrationstone.calibrated": "校準結果：(%s, %s, %s) · %s"
+}

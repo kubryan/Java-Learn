@@ -13,25 +13,31 @@
 | 本地知識索引 | 啟動後會將 Markdown 筆記與術語建立至瀏覽器 IndexedDB，可搜尋中文、英文、標籤、分類與正文。 |
 | 自訂知識 | 從頁首「學習基地」開啟知識總覽，新增自己整理的標題、術語、標籤與內容。 |
 | 練習程式 | 包含可直接編譯或執行的 Java、Swing 與 Python 入門練習。 |
+| 自動化測試 | Vitest 覆蓋 Markdown 解析、雙語資料與知識索引純函式；Spring Boot API 也有 MockMvc 測試。 |
+| 後端 API 骨架 | `exercises/backend-learning-api/` 已包含可執行的 Spring Boot 記憶體 API。 |
+| Minecraft 模組 | `minecraft/fabric-mod/` 與 `minecraft/neoforge-mod/` 已是可獨立 build 的 26.2 專案起點。 |
 
 > **本地資料說明：** 自訂知識與閱讀進度只保存在目前瀏覽器的 IndexedDB／localStorage。它們不會寫入 Git、也不會自動同步到其他裝置；清除瀏覽器網站資料後將無法還原。
 
 ## 快速開始
 
-請先安裝 Node.js 與 pnpm，然後在專案根目錄執行：
+請先安裝 Node.js LTS。為了不要求系統管理員權限，建議在專案根目錄使用 Corepack 執行 pnpm：
 
 ```bash
-pnpm install
-pnpm dev
+corepack pnpm install
+corepack pnpm dev
 ```
 
-終端機會顯示本地網址。開啟後可以閱讀筆記、搜尋中英文術語、標記完成進度，或從頁首的「學習基地」新增自己的知識。
+Windows 使用者也可以直接雙擊 `start-local.bat`；它會自動找到 Node.js、安裝缺少的依賴並啟動開發伺服器。終端機會顯示本地網址，若 3000 已被占用，Vite 會自動改用下一個可用連接埠。
 
-如需驗證型別與 production build：
+開啟網址後可以閱讀筆記、搜尋中英文術語、標記完成進度，或從頁首的「學習基地」新增自己的知識。
+
+如需驗證型別、執行測試與 production build：
 
 ```bash
-pnpm check
-pnpm build
+corepack pnpm test
+corepack pnpm check
+corepack pnpm build
 ```
 
 ## 專案結構
@@ -45,7 +51,11 @@ pnpm build
 | `exercises/java-basics/` | 不依賴框架的 Java 基礎練習。 |
 | `exercises/python-basics/` | Python 入門練習。 |
 | `exercises/desktop-file-organizer/` | Swing 視窗與桌面工具起點。 |
-| `minecraft/` | Fabric／NeoForge 共通功能規格與各平台起點。 |
+| `minecraft/COMMON_FEATURE_SPEC.md` | Fabric／NeoForge 共通的 Calibration Stone 驗收規格。 |
+| `minecraft/fabric-mod/` | Fabric 26.2 可 build 的 Calibration Stone mod。 |
+| `minecraft/neoforge-mod/` | NeoForge 26.2 可 build 的 Calibration Stone mod。 |
+| `exercises/backend-learning-api/` | Spring Boot 記憶體 API、controller/service/model 與測試。 |
+| `.github/workflows/ci.yml` | 網站 check/build 與兩個 Minecraft mod 的 CI。 |
 
 ## 新增或修改 Markdown 筆記
 
@@ -65,7 +75,7 @@ summary: 用一句話說明這篇筆記能解決什麼問題。
 ## 本章目標
 ```
 
-目前分類包括「開始使用、Java 基礎、Python 基礎、物件導向、桌面工具、後端 API、Minecraft 共通、Fabric、NeoForge」。Vite 會偵測多數檔案變更；若新筆記沒有出現，停止後重新執行 `pnpm dev`。
+目前分類包括「開始使用、Java 基礎、Python 基礎、物件導向、桌面工具、後端 API、Minecraft 共通、Fabric、NeoForge」。Vite 會偵測多數檔案變更；若新筆記沒有出現，停止後重新執行 `corepack pnpm dev`。
 
 ## 執行練習程式
 
@@ -91,6 +101,18 @@ python3 exercises/python-basics/corrected_basics.py
 python3 exercises/python-basics/input_and_loops.py
 ```
 
+## 後端 API 練習
+
+`exercises/backend-learning-api/` 現在已具備第一版 Spring Boot 專案骨架，使用記憶體 `List<LearningNote>`，提供 `GET /api/notes`、`GET /api/notes/{id}` 與 `PATCH /api/notes/{id}/completion`。該資料夾內含 Maven Wrapper，執行 `./mvnw test`（Windows 為 `.\mvnw.cmd test`）可執行 API 測試；執行 `./mvnw spring-boot:run`（Windows 為 `.\mvnw.cmd spring-boot:run`）可啟動 `http://localhost:8080`。
+
 ## Minecraft 版本原則
 
-Fabric 與 NeoForge 應分別建立、建置與驗證，不直接交叉複製 API。實作前請記錄目標 Minecraft、Java、loader、API／MDK 與建置工具版本，並以該版本的官方文件確認相容性。
+Fabric 與 NeoForge 應分別建立、建置與驗證，不直接交叉複製 API。目前兩個專案均以 Minecraft 26.2、Java 25 為目標，並以各自官方範本與文件維持獨立的 loader 寫法。實作前請記錄目標 Minecraft、Java、loader、API／MDK 與建置工具版本，並以該版本的官方文件確認相容性。
+
+## 本機編輯說明
+
+若要使用瀏覽器內的實體 Markdown 編輯、備份或 Git 工作台，請閱讀 [`LOCAL_EDITING.md`](LOCAL_EDITING.md)。文件中的路徑以「專案根目錄」表示，不依賴特定電腦或特定作業系統；Windows 另提供 `start-local.bat` 的雙擊啟動方式。
+
+## 授權
+
+本專案採用 [MIT License](LICENSE)。

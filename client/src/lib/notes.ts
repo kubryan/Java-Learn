@@ -37,9 +37,9 @@ const noteModules = import.meta.glob("../content/**/*.md", {
 function categoryTags(category: string) {
   if (["Java 基礎", "物件導向", "桌面工具", "後端 API"].includes(category)) return ["Java"];
   if (category === "Python 基礎") return ["Python"];
-  if (["Minecraft 共通", "Fabric", "NeoForge"].includes(category)) return ["Minecraft"];
-  if (category === "Fabric") return ["Fabric"];
-  if (category === "NeoForge") return ["NeoForge"];
+  if (category === "Fabric") return ["Minecraft", "Fabric"];
+  if (category === "NeoForge") return ["Minecraft", "NeoForge"];
+  if (category === "Minecraft 共通") return ["Minecraft"];
   return [];
 }
 

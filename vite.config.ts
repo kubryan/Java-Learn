@@ -239,13 +239,30 @@ function vitePluginLocalGitWorkspace(): Plugin {
   const contentRoot = path.join(PROJECT_ROOT, "client", "src", "content");
   const localAddresses = ["127.0.0.1", "::1", "::ffff:127.0.0.1"];
   const body = (req: any) => new Promise<any>((resolve, reject) => { let value = ""; req.on("data", (chunk: Buffer) => value += chunk); req.on("end", () => { try { resolve(JSON.parse(value || "{}")); } catch (error) { reject(error); } }); });
-  const runGit = async (args: string[]) => { const result = await execFile("git", args, { cwd: PROJECT_ROOT, maxBuffer: 1024 * 1024 }); return String(result.stdout).trim(); };
+  const runGit = async (args: string[]) => {
+    const result = await execFile("git", args, { cwd: PROJECT_ROOT, maxBuffer: 1024 * 1024 });
+    return String(result.stdout).trim();
+  };
   const optionalGit = async (args: string[]) => { try { return await runGit(args); } catch { return ""; } };
   const isRepository = async () => (await optionalGit(["rev-parse", "--is-inside-work-tree"])) === "true";
-  const safeMarkdownPath = (value: unknown) => { const relative = String(value || "").replace(/\\/g, "/"); if (!relative || !relative.endsWith(".md") || relative.includes("\0")) throw new Error("只允許選取 content 目錄內的 Markdown 筆記。"); const target = path.resolve(contentRoot, relative); if (!target.startsWith(`${contentRoot}${path.sep}`)) throw new Error("不允許操作 content 目錄以外的檔案。"); return path.relative(PROJECT_ROOT, target).replace(/\\/g, "/"); };
-  const selectedPaths = (value: unknown) => { if (!Array.isArray(value) || !value.length || value.length > 40) throw new Error("請選擇 1 至 40 個 Markdown 檔案。 "); return Array.from(new Set(value.map(safeMarkdownPath))); };
+  const safeMarkdownPath = (value: unknown) => {
+    const relative = String(value || "").replace(/\\/g, "/");
+    if (!relative || !relative.endsWith(".md") || relative.includes("\0")) throw new Error("只允許選取 content 目錄內的 Markdown 筆記。");
+    const target = path.resolve(contentRoot, relative);
+    if (!target.startsWith(`${contentRoot}${path.sep}`)) throw new Error("不允許操作 content 目錄以外的檔案。");
+    return path.relative(PROJECT_ROOT, target).replace(/\\/g, "/");
+  };
+  const selectedPaths = (value: unknown) => {
+    if (!Array.isArray(value) || !value.length || value.length > 40) throw new Error("請選擇 1 至 40 個 Markdown 檔案。 ");
+    return Array.from(new Set(value.map(safeMarkdownPath)));
+  };
   const parseChanges = (status: string): GitChange[] => status.split("\0").filter(Boolean).map((line) => ({ status: line.slice(0, 2), path: line.slice(3) })).filter((change) => change.path.startsWith("client/src/content/") && change.path.endsWith(".md")).map((change) => ({ ...change, path: change.path.replace(/^client\/src\/content\//, "") }));
-  const info = async () => { const repository = await isRepository(); if (!repository) return { repository: false, branch: "", remote: "", userName: "", userEmail: "", changes: [] as GitChange[] }; const [branch, remote, userName, userEmail, status] = await Promise.all([optionalGit(["branch", "--show-current"]), optionalGit(["remote", "get-url", "origin"]), optionalGit(["config", "user.name"]), optionalGit(["config", "user.email"]), optionalGit(["status", "--porcelain=v1", "-z", "--untracked-files=all"])]); return { repository: true, branch, remote, userName, userEmail, changes: parseChanges(status) }; };
+  const info = async () => {
+    const repository = await isRepository();
+    if (!repository) return { repository: false, branch: "", remote: "", userName: "", userEmail: "", changes: [] as GitChange[] };
+    const [branch, remote, userName, userEmail, status] = await Promise.all([optionalGit(["branch", "--show-current"]), optionalGit(["remote", "get-url", "origin"]), optionalGit(["config", "user.name"]), optionalGit(["config", "user.email"]), optionalGit(["status", "--porcelain=v1", "-z", "--untracked-files=all"])]);
+    return { repository: true, branch, remote, userName, userEmail, changes: parseChanges(status) };
+  };
   return { name: "local-git-workspace", configureServer(server) { server.middlewares.use("/api/git", async (req, res) => {
     if (req.socket.remoteAddress && !localAddresses.includes(req.socket.remoteAddress)) { res.writeHead(403); res.end("Local access only"); return; }
     try {
@@ -279,6 +296,12 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
+  test: {
+    environment: "node",
+    globals: false,
+    include: ["src/**/*.test.ts"],
+    exclude: ["node_modules", "dist", "build"],
+  },
   server: {
     port: 3000,
     strictPort: false, // Will find next available port if 3000 is busy
@@ -295,6 +318,9 @@ export default defineConfig({
     fs: {
       strict: true,
       deny: ["**/.*"],
+    },
+    watch: {
+      ignored: ["**/client/src/content/**"],
     },
   },
 });

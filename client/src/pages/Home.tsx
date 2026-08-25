@@ -1,14 +1,16 @@
 /**
  * Design reminder — 藍圖工作桌：三帶式工作畫布，讓導覽、閱讀與下一步始終同時可見。
  */
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type SyntheticEvent } from "react";
 import {
   ArrowRight,
   Check,
   ChevronRight,
   Clipboard,
   Code2,
+  Command as CommandIcon,
   Database,
+  Download,
   FileText,
   Gamepad2,
   GitBranch,
@@ -25,6 +27,7 @@ import {
 } from "lucide-react";
 import { categories, notes, searchNotes, type Note } from "@/lib/notes";
 import { KnowledgeTree } from "@/components/KnowledgeTree";
+import { CommandPalette } from "@/components/CommandPalette";
 import { BackupCenter } from "@/components/BackupCenter";
 import { KnowledgeGraph } from "@/components/KnowledgeGraph";
 import { GitWorkspace } from "@/components/GitWorkspace";
@@ -56,6 +59,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createLocalBackup, downloadBackup } from "@/lib/local-backup";
+import { toast } from "sonner";
 import {
   addCustomKnowledge,
   createKnowledgeSnippet,
@@ -77,6 +82,17 @@ const assets = {
   backend: "/manus-storage/route-backend-desktop_8a95f80b.png",
   minecraft: "/manus-storage/route-minecraft-loaders_fad81fd7.png",
 };
+
+const REMOTE_ASSET_ORIGIN = "https://javabase-v3pxpg8n.manus.space";
+
+function handleStorageImageError(event: SyntheticEvent<HTMLImageElement>) {
+  const image = event.currentTarget;
+  if (image.dataset.storageFallback === "true") return;
+  const url = new URL(image.currentSrc || image.src, window.location.href);
+  if (!url.pathname.startsWith("/manus-storage/")) return;
+  image.dataset.storageFallback = "true";
+  image.src = `${REMOTE_ASSET_ORIGIN}${url.pathname}`;
+}
 
 const tracks = [
   {
@@ -152,6 +168,9 @@ export default function Home() {
   const [savedMessage, setSavedMessage] = useState("");
   const [isSavingKnowledge, setIsSavingKnowledge] = useState(false);
   const [quickSearchOpen, setQuickSearchOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [newNoteRequest, setNewNoteRequest] = useState(0);
   const [quickSearchQuery, setQuickSearchQuery] = useState("");
   const [quickSearchResults, setQuickSearchResults] = useState<KnowledgeSearchResult[]>([]);
   const [knowledgeTags, setKnowledgeTags] = useState<KnowledgeTag[]>([]);
@@ -237,10 +256,29 @@ export default function Home() {
 
   useEffect(() => {
     const onShortcut = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      const modifier = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+      const target = event.target as HTMLElement | null;
+      const isTextEntry = Boolean(target?.closest("input, textarea, [contenteditable=\"true\"]"));
+
+      if (modifier && event.shiftKey && key === "p") {
         event.preventDefault();
-        setQuickSearchOpen(true);
-        window.setTimeout(() => quickSearchInputRef.current?.focus(), 0);
+        setCommandPaletteOpen(true);
+        return;
+      }
+      if (modifier && key === "k" && !event.shiftKey) {
+        event.preventDefault();
+        openQuickSearch();
+        return;
+      }
+      if (modifier && key === "n" && !event.shiftKey && !isTextEntry) {
+        event.preventDefault();
+        setNewNoteRequest((value) => value + 1);
+        return;
+      }
+      if (modifier && key === "p" && !event.shiftKey && !isTextEntry) {
+        event.preventDefault();
+        setPreviewOpen(true);
       }
     };
     window.addEventListener("keydown", onShortcut);
@@ -336,6 +374,20 @@ export default function Home() {
     window.setTimeout(() => quickSearchInputRef.current?.focus(), 0);
   }
 
+  function openPreview() {
+    setPreviewOpen(true);
+  }
+
+  async function exportAllBackup() {
+    try {
+      const backup = await createLocalBackup();
+      downloadBackup(backup);
+      toast.success("已下載完整本機備份");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "匯出備份未完成");
+    }
+  }
+
   function selectKnowledgeResult(result: KnowledgeSearchResult) {
     const { record } = result;
     if (record.kind === "custom") {
@@ -396,6 +448,19 @@ export default function Home() {
     selectKnowledgeResult(result);
   }
 
+  const commandActions = [
+    { id: "create-note", label: "新增筆記", description: "在知識樹建立一個新的 Markdown 筆記", shortcut: "Ctrl N", keywords: ["new", "markdown", "note"], icon: Plus, onSelect: () => setNewNoteRequest((value) => value + 1) },
+    { id: "search-knowledge", label: "搜尋知識", description: "搜尋 Markdown、術語、標籤與本地知識", shortcut: "Ctrl K", keywords: ["search", "find", "knowledge"], icon: Search, onSelect: openQuickSearch },
+    { id: "preview-note", label: "預覽目前筆記", description: "以閱讀模式開啟目前 Markdown 筆記", shortcut: "Ctrl P", keywords: ["preview", "read", "markdown"], icon: FileText, onSelect: openPreview },
+    { id: "knowledge-graph", label: "開啟 Knowledge Graph", description: "查看 Markdown Wiki 連結的知識關聯圖", keywords: ["graph", "wiki", "links"], icon: Network, onSelect: () => setGraphOpen(true) },
+    { id: "settings", label: "開啟設定與備份", description: "管理本機資料備份、還原與 Markdown 匯出", keywords: ["settings", "backup", "restore", "export"], icon: Settings, onSelect: () => setBackupOpen(true) },
+    { id: "export-all", label: "匯出全部", description: "下載目前瀏覽器中的完整 JavaBase JSON 備份", keywords: ["export", "backup", "json", "download"], icon: Download, onSelect: () => void exportAllBackup() },
+    { id: "git", label: "開啟 Git 工作台", description: "檢視、暫存、提交與推送 Markdown 變更", keywords: ["git", "commit", "push", "diff"], icon: GitBranch, onSelect: () => setGitOpen(true) },
+    { id: "history", label: "開啟修改歷史", description: "查看目前筆記的版本快照與差異", keywords: ["history", "revision", "diff"], icon: History, onSelect: () => setHistoryOpen(true) },
+    { id: "editor", label: "編輯實體 Markdown", description: "開啟具備自動保存與衝突檢查的編輯器", keywords: ["edit", "write", "save", "markdown"], icon: FileText, onSelect: () => { setEditorDirty(false); setEditorHasSaved(false); setEditorOpen(true); } },
+    { id: "theme", label: theme === "dark" ? "切換至 Light" : "切換至 Dark", description: "切換學習基地的顯示主題", keywords: ["theme", "dark", "light"], icon: CommandIcon, onSelect: () => setTheme?.(theme === "dark" ? "light" : "dark") },
+  ];
+
   if (!selectedNote) {
     return <main className="p-10">找不到可閱讀的 Markdown 筆記。</main>;
   }
@@ -411,7 +476,7 @@ export default function Home() {
             aria-label="開啟學習基地已保存知識總覽"
             title="開啟已保存知識"
           >
-            <img className="brand-mark h-11 w-11 shrink-0" src={assets.mark} alt="程式學習基地識別標誌" />
+            <img className="brand-mark h-11 w-11 shrink-0" src={assets.mark} onError={handleStorageImageError} alt="程式學習基地識別標誌" />
             <div className="min-w-0">
               <p className="brand-metadata font-mono text-[9px] font-bold tracking-[0.16em]">LOCAL MARKDOWN WORKBENCH · OPEN</p>
               <h1 className="wordmark-lockup brand-wordmark truncate">
@@ -419,12 +484,13 @@ export default function Home() {
               </h1>
             </div>
           </button>
-          <div className="flex shrink-0 gap-2 md:hidden"><button type="button" onClick={() => setBackupOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-4 w-4" /></button><button type="button" onClick={() => setGitOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-4 w-4" /></button><button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button></div>
+          <div className="flex shrink-0 gap-2 md:hidden"><button type="button" onClick={() => setCommandPaletteOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-teal-800/20 bg-teal-700/[0.08] text-teal-800 transition hover:border-teal-700/35 hover:bg-teal-700 hover:text-white" aria-label="開啟命令面板"><CommandIcon className="h-4 w-4" /></button><button type="button" onClick={() => setBackupOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-4 w-4" /></button><button type="button" onClick={() => setGitOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-4 w-4" /></button><button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button></div>
           <div className="workbench-tools hidden items-center gap-3 text-xs text-slate-600 md:flex">
             <span className="inline-flex overflow-hidden rounded-md border border-slate-950/10 bg-white/65"><button type="button" onClick={() => setTheme?.("light")} className={`px-2 py-1.5 ${theme === "light" ? "bg-teal-700 text-white" : ""}`}>☀ Light</button><button type="button" onClick={() => setTheme?.("dark")} className={`px-2 py-1.5 ${theme === "dark" ? "bg-teal-700 text-white" : ""}`}>🌙 Dark</button><button type="button" onClick={() => setTheme?.("system")} className={`px-2 py-1.5 ${theme === "system" ? "bg-teal-700 text-white" : ""}`}>🖥 System</button></span>
             <button type="button" onClick={() => setGraphOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-3.5 w-3.5" />知識圖</button>
             <button type="button" onClick={() => setBackupOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-3.5 w-3.5" />設定</button>
             <button type="button" onClick={() => setGitOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-3.5 w-3.5" />Git</button>
+            <button type="button" onClick={() => setCommandPaletteOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-teal-800/20 bg-teal-700/[0.08] px-2.5 py-1.5 font-semibold text-teal-800 transition hover:border-teal-700/35 hover:bg-teal-700 hover:text-white" aria-label="開啟命令面板"><CommandIcon className="h-3.5 w-3.5" />命令面板 <kbd className="rounded border border-current/20 bg-white/50 px-1 font-mono text-[10px]">Ctrl ⇧ P</kbd></button>
             <button type="button" onClick={openQuickSearch} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟快速全文搜尋">
               <Search className="h-3.5 w-3.5" />快速搜尋 <kbd className="rounded border border-slate-950/10 bg-[#f8f4e9] px-1 font-mono text-[10px]">Ctrl K</kbd>
             </button>
@@ -434,8 +500,23 @@ export default function Home() {
         </div>
       </header>
 
+      <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} actions={commandActions} />
       <BackupCenter open={backupOpen} onOpenChange={setBackupOpen} />
       <GitWorkspace open={gitOpen} onOpenChange={setGitOpen} />
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
+          <DialogHeader className="border-b border-slate-950/10 bg-[#fffdf7]/80 px-6 pb-5 pt-6 sm:px-8">
+            <div className="flex items-center gap-2 text-teal-800"><FileText className="h-4 w-4" /><p className="section-label text-teal-800">MARKDOWN PREVIEW</p></div>
+            <DialogTitle className="font-serif text-2xl font-bold tracking-tight">{selectedNote.title}</DialogTitle>
+            <DialogDescription>{selectedNote.summary}</DialogDescription>
+          </DialogHeader>
+          <article className="reading-paper prose prose-slate max-w-none px-6 py-7 sm:px-10 sm:py-9">
+            <WikiMarkdown markdown={selectedNote.body} onOpenNote={(note) => { setPreviewOpen(false); openWikiNote(note); }} />
+          </article>
+          <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-4 sm:px-8"><span className="mr-auto font-mono text-[10px] text-slate-500">{selectedNote.path} · READ-ONLY PREVIEW</span><DialogClose className="rounded-md border border-slate-950/15 bg-white px-3 py-2 text-sm font-semibold transition hover:bg-slate-950 hover:text-white">關閉預覽</DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={graphOpen} onOpenChange={setGraphOpen}>
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-6xl gap-0 overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
@@ -592,7 +673,7 @@ export default function Home() {
             {tagOpen && <div className="mt-2 flex flex-wrap gap-1.5">{knowledgeTags.slice(0, 24).map((tag) => <button key={tag.normalized} type="button" onClick={() => selectTag(tag.name)} className={`rounded-sm border px-1.5 py-1 text-[10px] transition ${selectedTag.toLocaleLowerCase() === tag.normalized ? "border-teal-700 bg-teal-700 text-white" : "border-teal-800/15 bg-white/70 text-slate-700 hover:border-teal-700/40"}`}>{tag.name} <span className="font-mono opacity-70">{tag.count}</span></button>)}</div>}
           </section>
 
-          <KnowledgeTree notes={filteredNotes} activeSlug={activeSlug} completed={completed} onOpenNote={openWikiNote} />
+          <KnowledgeTree notes={filteredNotes} activeSlug={activeSlug} completed={completed} onOpenNote={openWikiNote} createNoteRequest={newNoteRequest} />
 
           <div className="mt-5 rounded-md border border-teal-700/20 bg-teal-700/[0.07] p-3">
             <div className="mb-2 flex items-center justify-between">
@@ -647,7 +728,7 @@ export default function Home() {
                     onClick={() => selectCategory(track.category)}
                     className="track-card route-path-stop group text-left"
                   >
-                    <img className="track-card-image" src={track.image} alt="" aria-hidden="true" />
+                    <img className="track-card-image" src={track.image} onError={handleStorageImageError} alt="" aria-hidden="true" />
                     <div className="relative z-10 flex min-h-[228px] flex-col p-4">
                       <div className="flex items-center justify-between">
                         <span className="route-coordinate">{track.kicker}</span>

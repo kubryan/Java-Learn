@@ -1,0 +1,4 @@
+{
+  "item.calibrationstone.calibration_stone": "Calibration Stone",
+  "message.calibrationstone.calibrated": "Calibration: (%s, %s, %s) · %s"
+}

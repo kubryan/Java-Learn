@@ -121,3 +121,7 @@ todo.md
 ideas.md
 bilingual-style-guide.md
 github-publish-audit.md
+
+# Java build outputs
+**/target/
+**/.gradle/

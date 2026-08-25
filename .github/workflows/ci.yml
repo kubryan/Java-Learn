@@ -1,0 +1,105 @@
+name: JavaBase CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: javabase-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Website check and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install website dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check website
+        run: pnpm check
+
+      - name: Build website
+        run: pnpm build
+
+  backend-api:
+    name: Spring Boot API tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: exercises/backend-learning-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Run API tests
+        run: chmod +x mvnw && ./mvnw -B test
+
+  fabric:
+    name: Fabric 26.2 build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: minecraft/fabric-mod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+
+      - name: Build Fabric mod
+        run: ./gradlew build --no-daemon
+
+  neoforge:
+    name: NeoForge 26.2 build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: minecraft/neoforge-mod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+
+      - name: Build NeoForge mod
+        run: ./gradlew build --no-daemon
