@@ -238,8 +238,16 @@
 .dark .blueprint-shell .reading-paper .wiki-link::before { color: #7ee6d8 !important; }
 .dark .blueprint-shell .reading-paper .wiki-link-missing { background: rgba(251,191,36,.16) !important; color: #fde9a4 !important; border-color: rgba(251,191,36,.62) !important; }
 .dark .blueprint-shell .reading-paper code { background: #07131f !important; color: #c9f7ef !important; border: 1px solid rgba(148, 210, 207, .18); }
-.dark .blueprint-shell .reading-paper pre { background: #060f19 !important; border-color: rgba(148,210,207,.28) !important; }
-.dark .blueprint-shell .reading-paper pre code { background: transparent !important; border: 0; color: #d9f7f1 !important; }
+.dark .blueprint-shell .reading-paper pre { background: #0b1c2b !important; border-color: rgba(148,210,207,.42) !important; box-shadow: inset 0 0 0 1px rgba(94,234,212,.06), 0 8px 24px rgba(0,0,0,.22); }
+.dark .blueprint-shell .reading-paper pre code { background: transparent !important; border: 0; color: #e6f4fb !important; }
+.dark .blueprint-shell .reading-paper pre code span { color: #dbeafe !important; }
+.dark .blueprint-shell .reading-paper pre code span[style*="#24292e"], .dark .blueprint-shell .reading-paper pre code span[style*="#24292f"], .dark .blueprint-shell .reading-paper pre code span[style*="#586069"], .dark .blueprint-shell .reading-paper pre code span[style*="#6a737d"] { color: #dbeafe !important; }
+.dark .blueprint-shell .reading-paper pre code span[style*="#d73a49"], .dark .blueprint-shell .reading-paper pre code span[style*="#b31d28"] { color: #ff8b86 !important; }
+.dark .blueprint-shell .reading-paper pre code span[style*="#6f42c1"] { color: #d8b4fe !important; }
+.dark .blueprint-shell .reading-paper pre code span[style*="#005cc5"] { color: #80caff !important; }
+.dark .blueprint-shell .reading-paper pre code span[style*="#032f62"] { color: #a8dcff !important; }
+.dark .blueprint-shell .reading-paper pre code span[style*="#22863a"] { color: #86efac !important; }
+.dark .blueprint-shell .reading-paper pre code span[style*="#e36209"] { color: #ffb36b !important; }
 .dark .blueprint-shell .reading-paper blockquote { background: #16364a !important; border-color: #21b8a7 !important; color: #d8e9f2 !important; }
 .dark .blueprint-shell .reading-paper table { border-color: var(--night-border) !important; }
 .dark .blueprint-shell .reading-paper th { background: #07131f !important; color: #f4f8fb !important; }
