@@ -1,7 +1,7 @@
 /**
  * Design reminder — 藍圖工作桌：三帶式工作畫布，讓導覽、閱讀與下一步始終同時可見。
  */
-import { useEffect, useMemo, useRef, useState, type FormEvent, type SyntheticEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent as ReactPointerEvent, type SyntheticEvent } from "react";
 import {
   ArrowRight,
   Check,
@@ -84,6 +84,23 @@ const assets = {
 };
 
 const REMOTE_ASSET_ORIGIN = "https://javabase-v3pxpg8n.manus.space";
+const SIDEBAR_WIDTH_STORAGE_KEY = "java-learning-sidebar-width";
+const SIDEBAR_MIN_WIDTH = 238;
+const SIDEBAR_MAX_WIDTH = 480;
+const SIDEBAR_DEFAULT_WIDTH = 310;
+
+function readStoredSidebarWidth() {
+  try {
+    const stored = Number(window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY));
+    return Number.isFinite(stored) ? Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, stored)) : SIDEBAR_DEFAULT_WIDTH;
+  } catch {
+    return SIDEBAR_DEFAULT_WIDTH;
+  }
+}
+
+function clampSidebarWidth(width: number) {
+  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width));
+}
 
 function handleStorageImageError(event: SyntheticEvent<HTMLImageElement>) {
   const image = event.currentTarget;
@@ -183,8 +200,53 @@ export default function Home() {
   const [editorDirty, setEditorDirty] = useState(false);
   const [editorHasSaved, setEditorHasSaved] = useState(false);
   const [editorCloseConfirm, setEditorCloseConfirm] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(readStoredSidebarWidth);
+  const [isSidebarResizing, setIsSidebarResizing] = useState(false);
+  const sidebarResizeStartRef = useRef({ pointerX: 0, width: SIDEBAR_DEFAULT_WIDTH });
   const articleRef = useRef<HTMLElement>(null);
   const quickSearchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(sidebarWidth));
+    } catch {
+      // 私有瀏覽模式或儲存空間受限時，仍保留本次工作階段的調整。
+    }
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    if (!isSidebarResizing) return;
+    const handlePointerMove = (event: PointerEvent) => {
+      setSidebarWidth(clampSidebarWidth(sidebarResizeStartRef.current.width + event.clientX - sidebarResizeStartRef.current.pointerX));
+    };
+    const stopResizing = () => setIsSidebarResizing(false);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopResizing, { once: true });
+    window.addEventListener("pointercancel", stopResizing, { once: true });
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopResizing);
+      window.removeEventListener("pointercancel", stopResizing);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isSidebarResizing]);
+
+  function startSidebarResize(event: ReactPointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    sidebarResizeStartRef.current = { pointerX: event.clientX, width: sidebarWidth };
+    setIsSidebarResizing(true);
+  }
+
+  function adjustSidebarWidth(delta: number) {
+    setSidebarWidth((width) => clampSidebarWidth(width + delta));
+  }
+
+  function resetSidebarWidth() {
+    setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
+  }
 
   useEffect(() => {
     const saved = window.localStorage.getItem("java-learning-completed");
@@ -647,8 +709,8 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
-      <div className="mx-auto grid max-w-[1540px] gap-5 px-4 py-5 sm:px-6 lg:px-8 xl:grid-cols-[238px_minmax(0,1fr)_258px] xl:gap-7">
-        <aside className="workbench-panel h-fit p-3 xl:sticky xl:top-5 xl:max-h-[calc(100vh-2.5rem)] xl:overflow-y-auto">
+      <div className={`mx-auto grid max-w-[1540px] gap-5 px-4 py-5 sm:px-6 lg:px-8 xl:grid-cols-[var(--sidebar-width)_12px_minmax(0,1fr)_258px] xl:gap-7 ${isSidebarResizing ? "select-none" : ""}`} style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}>
+        <aside className="workbench-panel min-w-0 h-fit p-3 xl:sticky xl:top-5 xl:max-h-[calc(100vh-2.5rem)] xl:overflow-y-auto">
           <div className="mb-3 flex items-center justify-between px-2 pt-1">
             <p className="section-label">LEARNING INDEX</p>
             <span className="font-mono text-[10px] text-slate-500">{knowledgeStats.total.toString().padStart(2, "0")} RECORDS</span>
@@ -686,6 +748,30 @@ export default function Home() {
             <p className="mt-2 text-xs leading-5 text-slate-600">已做完 {totalCompleted} / {notes.length} 篇。進度只保存於這台瀏覽器。</p>
           </div>
         </aside>
+
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="調整左側檔案樹寬度"
+          aria-valuemin={SIDEBAR_MIN_WIDTH}
+          aria-valuemax={SIDEBAR_MAX_WIDTH}
+          aria-valuenow={Math.round(sidebarWidth)}
+          tabIndex={0}
+          title="拖曳調整 Knowledge File Tree 寬度；雙擊重設"
+          onPointerDown={startSidebarResize}
+          onDoubleClick={resetSidebarWidth}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") { event.preventDefault(); adjustSidebarWidth(-16); }
+            if (event.key === "ArrowRight") { event.preventDefault(); adjustSidebarWidth(16); }
+            if (event.key === "Home") { event.preventDefault(); setSidebarWidth(SIDEBAR_MIN_WIDTH); }
+            if (event.key === "End") { event.preventDefault(); setSidebarWidth(SIDEBAR_MAX_WIDTH); }
+            if (event.key === "Enter" || event.key === " ") { event.preventDefault(); resetSidebarWidth(); }
+          }}
+          className={`group relative hidden min-h-[2rem] cursor-col-resize items-center justify-center rounded-full outline-none transition xl:flex ${isSidebarResizing ? "bg-teal-700/20" : "hover:bg-teal-700/10 focus-visible:bg-teal-700/10"}`}
+        >
+          <span className="h-16 w-1 rounded-full bg-slate-950/15 transition group-hover:bg-teal-700/60 group-focus-visible:bg-teal-700/60" />
+          <span className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-slate-950 px-2 py-1 font-mono text-[10px] text-white shadow-lg group-hover:block group-focus-visible:block">{Math.round(sidebarWidth)}px · 雙擊重設</span>
+        </div>
 
         <main className="min-w-0 space-y-5">
           {selectedTag && <section className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-teal-800/20 bg-teal-700/[0.07] px-4 py-3"><div className="flex items-center gap-2"><Tags className="h-4 w-4 text-teal-800" /><span className="section-label text-teal-800">TAG FILTER</span><span className="rounded-sm bg-white px-2 py-1 font-mono text-xs font-bold text-teal-900">{selectedTag}</span><span className="text-xs text-slate-600">{filteredNotes.length} 篇 Markdown 筆記</span></div><button type="button" onClick={clearTag} className="rounded-md border border-teal-800/20 bg-white px-2.5 py-1.5 text-xs font-bold text-teal-800 transition hover:border-teal-700 hover:bg-teal-700 hover:text-white">清除標籤</button></section>}
