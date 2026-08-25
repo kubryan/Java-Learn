@@ -408,14 +408,14 @@ export default function Home() {
           <button
             type="button"
             onClick={() => { setKnowledgeView("overview"); setKnowledgeOpen(true); }}
-            className="group flex min-w-0 items-center gap-3 rounded-md px-1 py-1 text-left transition hover:bg-teal-700/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
+            className="header-brand group flex min-w-0 items-center gap-3 rounded-md px-1 py-1 text-left transition hover:bg-teal-700/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
             aria-label="開啟學習基地已保存知識總覽"
             title="開啟已保存知識"
           >
-            <img className="h-11 w-11 shrink-0" src={assets.mark} alt="程式學習基地識別標誌" />
+            <img className="brand-mark h-11 w-11 shrink-0" src={assets.mark} alt="程式學習基地識別標誌" />
             <div className="min-w-0">
-              <p className="font-mono text-[9px] font-bold tracking-[0.16em] text-teal-700">LOCAL MARKDOWN WORKBENCH · OPEN</p>
-              <h1 className="wordmark-lockup truncate">
+              <p className="brand-metadata font-mono text-[9px] font-bold tracking-[0.16em]">LOCAL MARKDOWN WORKBENCH · OPEN</p>
+              <h1 className="wordmark-lockup brand-wordmark truncate">
                 <span className="wordmark-java">JAVA</span><span className="wordmark-divider">/</span><span>學習基地</span>
               </h1>
             </div>
@@ -453,7 +453,7 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editorOpen} onOpenChange={setEditorOpen}><DialogContent className="max-h-[calc(100vh-2rem)] max-w-7xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0"><DialogHeader className="border-b border-slate-950/10 px-6 pb-4 pt-6"><DialogTitle className="font-serif text-2xl font-bold">Markdown 編輯工作台 · 草稿模式</DialogTitle><DialogDescription>Ctrl+S 保存草稿；預覽不會直接覆寫 `client/src/content/`。</DialogDescription></DialogHeader><div className="p-4"><MarkdownEditor note={selectedNote} onOpenNote={(note) => { setEditorOpen(false); openWikiNote(note); }} /></div></DialogContent></Dialog>
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen}><DialogContent className="max-h-[calc(100vh-2rem)] max-w-7xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0"><DialogHeader className="border-b border-slate-950/10 px-6 pb-4 pt-6"><DialogTitle className="font-serif text-2xl font-bold">Markdown 編輯工作台 · 實體檔案模式</DialogTitle><DialogDescription>Ctrl+S 會先比對磁碟版本、建立備份，再寫回目前的 `client/src/content/` Markdown；保存後會重新載入索引。</DialogDescription></DialogHeader><div className="p-4"><MarkdownEditor note={selectedNote} onOpenNote={(note) => { setEditorOpen(false); openWikiNote(note); }} /></div></DialogContent></Dialog>
 
       <Dialog open={quickSearchOpen} onOpenChange={setQuickSearchOpen}>
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-3xl gap-0 overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0 text-slate-950 shadow-2xl">
@@ -611,8 +611,8 @@ export default function Home() {
           {selectedTag && <section className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-teal-800/20 bg-teal-700/[0.07] px-4 py-3"><div className="flex items-center gap-2"><Tags className="h-4 w-4 text-teal-800" /><span className="section-label text-teal-800">TAG FILTER</span><span className="rounded-sm bg-white px-2 py-1 font-mono text-xs font-bold text-teal-900">{selectedTag}</span><span className="text-xs text-slate-600">{filteredNotes.length} 篇 Markdown 筆記</span></div><button type="button" onClick={clearTag} className="rounded-md border border-teal-800/20 bg-white px-2.5 py-1.5 text-xs font-bold text-teal-800 transition hover:border-teal-700 hover:bg-teal-700 hover:text-white">清除標籤</button></section>}
           {!query.trim() && !selectedTag && (
             <>
-          <section className="mb-5 grid gap-3 md:grid-cols-2"><div className="rounded-md border border-slate-950/15 bg-[#fffdf7]/80 p-4"><p className="section-label text-teal-800">RECENTLY EDITED</p>{recentEdits.length ? recentEdits.map((item) => { const note = notes.find((entry) => entry.slug === item.noteSlug); return note && <button key={item.id} type="button" onClick={() => openWikiNote(note)} className="mt-2 block w-full text-left text-sm font-semibold hover:text-teal-800">📝 {note.title}<span className="ml-2 font-mono text-[10px] font-normal text-slate-500">{new Date(item.savedAt).toLocaleString("zh-TW")}</span></button>; }) : <p className="mt-2 text-sm text-slate-500">Markdown 下一次內容變更後會出現在此處。</p>}</div><div className="rounded-md border border-slate-950/15 bg-[#fffdf7]/80 p-4"><p className="section-label text-teal-800">RECENTLY READ</p>{recentReads.map((item) => { const note = notes.find((entry) => entry.slug === item.slug); return note && <button key={item.slug} type="button" onClick={() => openWikiNote(note)} className="mt-2 block w-full text-left text-sm font-semibold hover:text-teal-800">📖 {note.title}<span className="ml-2 font-mono text-[10px] font-normal text-slate-500">{new Date(item.at).toLocaleString("zh-TW")}</span></button>; })}</div></section>
-          {favoriteNotes.length > 0 && <section className="mb-5 rounded-md border border-amber-700/25 bg-amber-50/70 p-4 shadow-sm"><div className="flex items-center gap-2"><Star className="h-4 w-4 fill-amber-500 text-amber-700" /><p className="section-label text-amber-800">PINNED NOTES · {favoriteNotes.length}</p></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{favoriteNotes.map((note) => <button key={note.slug} type="button" onClick={() => openWikiNote(note)} className="rounded-md border border-slate-950/10 bg-[#fffdf7] px-3 py-2.5 text-left transition hover:border-amber-700/40"><span className="block font-serif font-bold">{note.title}</span><span className="mt-1 block font-mono text-[10px] text-teal-800">{note.category} · {note.tags.slice(0, 2).join(" · ")}</span></button>)}</div></section>}
+          <section className="mb-5 grid gap-3 md:grid-cols-2"><div className="dark-surface rounded-md border border-slate-950/15 bg-[#fffdf7]/80 p-4"><p className="section-label text-teal-800">RECENTLY EDITED</p>{recentEdits.length ? recentEdits.map((item) => { const note = notes.find((entry) => entry.slug === item.noteSlug); return note && <button key={item.id} type="button" onClick={() => openWikiNote(note)} className="dark-recent-item mt-2 block w-full text-left text-sm font-semibold hover:text-teal-800">📝 {note.title}<span className="ml-2 font-mono text-[10px] font-normal text-slate-500">{new Date(item.savedAt).toLocaleString("zh-TW")}</span></button>; }) : <p className="mt-2 text-sm text-slate-500">Markdown 下一次內容變更後會出現在此處。</p>}</div><div className="dark-surface rounded-md border border-slate-950/15 bg-[#fffdf7]/80 p-4"><p className="section-label text-teal-800">RECENTLY READ</p>{recentReads.map((item) => { const note = notes.find((entry) => entry.slug === item.slug); return note && <button key={item.slug} type="button" onClick={() => openWikiNote(note)} className="dark-recent-item mt-2 block w-full text-left text-sm font-semibold hover:text-teal-800">📖 {note.title}<span className="ml-2 font-mono text-[10px] font-normal text-slate-500">{new Date(item.at).toLocaleString("zh-TW")}</span></button>; })}</div></section>
+          {favoriteNotes.length > 0 && <section className="dark-surface mb-5 rounded-md border border-amber-700/25 bg-amber-50/70 p-4 shadow-sm"><div className="flex items-center gap-2"><Star className="h-4 w-4 fill-amber-500 text-amber-700" /><p className="section-label text-amber-800">PINNED NOTES · {favoriteNotes.length}</p></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{favoriteNotes.map((note) => <button key={note.slug} type="button" onClick={() => openWikiNote(note)} className="dark-surface-raised rounded-md border border-slate-950/10 bg-[#fffdf7] px-3 py-2.5 text-left transition hover:border-amber-700/40"><span className="block font-serif font-bold">{note.title}</span><span className="mt-1 block font-mono text-[10px] text-teal-800">{note.category} · {note.tags.slice(0, 2).join(" · ")}</span></button>)}</div></section>}
           <section className="hero-workbench overflow-hidden">
             <div className="hero-schematic" aria-hidden="true"><span className="schematic-code">public static void main(String[] args)</span><span className="schematic-note">VERIFY · BUILD · REPEAT</span><span className="schematic-axis">JAVA / PYTHON / MINECRAFT</span><i className="schematic-orbit schematic-orbit-one" /><i className="schematic-orbit schematic-orbit-two" /></div>
             <div className="hero-coordinate-rail" aria-hidden="true"><span>00</span><i /><span>10</span><i /><span>20</span><i /><span>30</span></div>
@@ -637,6 +637,7 @@ export default function Home() {
               </div>
               <span className="hidden text-xs text-slate-500 sm:block">點選路線，開啟對應筆記</span>
             </div>
+            <div className="route-path-ruler" aria-hidden="true"><span>00</span><i /><span>01</span><i /><span>02</span><i /><span>03</span><b>→</b></div>
             <div className="route-module-grid grid gap-3 lg:grid-cols-3">
               {tracks.map((track, index) => {
                 const Icon = track.icon;
@@ -645,7 +646,7 @@ export default function Home() {
                     key={track.id}
                     type="button"
                     onClick={() => selectCategory(track.category)}
-                    className="track-card group text-left"
+                    className="track-card route-path-stop group text-left"
                   >
                     <img className="track-card-image" src={track.image} alt="" aria-hidden="true" />
                     <div className="relative z-10 flex min-h-[228px] flex-col p-4">
@@ -653,7 +654,7 @@ export default function Home() {
                         <span className="route-coordinate">{track.kicker}</span>
                         <span className="route-anchor"><span>{String(index + 1).padStart(2, "0")}</span><i /><Icon className="h-3.5 w-3.5" /></span>
                       </div>
-                      <div className="mt-auto rounded-md bg-[#fbf7ee]/94 p-3 backdrop-blur-sm">
+                      <div className="dark-route-copy mt-auto rounded-md bg-[#fbf7ee]/94 p-3 backdrop-blur-sm">
                         <h3 className="font-serif text-lg font-bold leading-snug">{track.title}</h3>
                         <p className="mt-1.5 text-xs leading-5 text-slate-600">{track.description}</p>
                         <div className="mt-3 flex items-center justify-between gap-2">
@@ -671,7 +672,7 @@ export default function Home() {
           )}
 
           <section className="workbench-panel overflow-hidden">
-            <div className="flex flex-col gap-4 border-b border-slate-900/10 bg-[#fffdf7]/75 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="dark-surface-raised flex flex-col gap-4 border-b border-slate-900/10 bg-[#fffdf7]/75 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div className="min-w-0">
                 <p className="section-label">CURRENT NOTE · {selectedNote.category.toUpperCase()}</p>
                 <h2 className="mt-1 font-serif text-2xl font-bold tracking-tight">{selectedNote.title}</h2>
@@ -686,11 +687,11 @@ export default function Home() {
                 {completed.includes(selectedNote.slug) ? "已完成" : "標記完成"}
               </button>
               <button type="button" onClick={() => setHistoryOpen(true)} className="completion-stamp"><History className="h-4 w-4" />修改歷史</button>
-              <button type="button" onClick={() => setEditorOpen(true)} className="completion-stamp"><FileText className="h-4 w-4" />編輯草稿</button>
+              <button type="button" onClick={() => setEditorOpen(true)} className="completion-stamp"><FileText className="h-4 w-4" />編輯實體 Markdown</button>
               <button type="button" onClick={() => toggleFavorite(selectedNote.slug)} className={`completion-stamp ${favorites.includes(selectedNote.slug) ? "completion-stamp-done" : ""}`}><Star className={`h-4 w-4 ${favorites.includes(selectedNote.slug) ? "fill-current" : ""}`} />{favorites.includes(selectedNote.slug) ? "已收藏" : "收藏"}</button>
             </div>
 
-            <div className="border-b border-slate-900/10 bg-[#f6f1e7] px-4 py-2.5 sm:px-6">
+            <div className="dark-surface border-b border-slate-900/10 bg-[#f6f1e7] px-4 py-2.5 sm:px-6">
               <div className="flex gap-2 overflow-x-auto pb-0.5">
                 {(filteredNotes.length ? filteredNotes : notes).map((note) => (
                   <button

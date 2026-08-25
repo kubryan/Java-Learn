@@ -1,5 +1,5 @@
 /**
- * Design reminder — 藍圖工作桌：版本紀錄是可查驗的本地時間線；它保護原始 Markdown，而不假裝能在瀏覽器中直接覆寫磁碟檔案。
+ * Design reminder — 藍圖工作桌：版本紀錄是可查驗的本地時間線；實體 Markdown 是來源，IndexedDB 保留其載入後的閱讀快照。
  */
 import type { Note } from "./notes";
 

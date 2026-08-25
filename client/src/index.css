@@ -48,7 +48,11 @@
   }
   .workbench-panel { @apply rounded-md border border-slate-950/15 bg-[#fffdf7]/90 shadow-[0_12px_28px_rgba(23,38,58,0.055)]; }
   .section-label { @apply font-mono text-[10px] font-semibold tracking-[0.16em] text-slate-500; }
+  .header-brand { position: relative; }
+  .brand-mark { filter: drop-shadow(0 2px 0 rgba(23,38,58,.12)); }
+  .brand-metadata { color: #50667a; }
   .wordmark-lockup { @apply flex items-baseline gap-1 font-serif text-[1.2rem] font-black leading-none tracking-[0.045em] text-slate-950; }
+  .brand-wordmark { font-size: clamp(1.25rem, 2vw, 1.5rem); letter-spacing: .06em; }
   .wordmark-java { @apply font-mono text-[0.8em] font-bold tracking-[0.13em] text-teal-800; }
   .wordmark-divider { @apply -mx-0.5 font-mono text-[0.78em] text-amber-700; }
   .verification-dot { @apply h-2 w-2 rounded-full bg-teal-600 shadow-[0_0_0_4px_rgba(15,157,138,0.13)]; }
@@ -72,25 +76,35 @@
   .hero-coordinate-rail { @apply absolute bottom-3 right-3 z-10 hidden items-center gap-2 rounded-sm border border-white/60 bg-slate-950/80 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.12em] text-[#f8f4e9] sm:flex; }
   .hero-coordinate-rail i { @apply h-px w-3 bg-teal-300; }
   .primary-stamp { @apply inline-flex items-center gap-2 rounded-sm bg-teal-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition duration-150 hover:bg-teal-800 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2; }
+  .route-path-ruler { @apply mb-3 flex items-center gap-2 border-y border-slate-950/10 bg-slate-950/[0.025] px-3 py-1.5 font-mono text-[9px] font-bold tracking-[0.1em] text-slate-600; }
+  .route-path-ruler i { @apply h-px min-w-5 flex-1 border-t border-dashed border-slate-700/45; }
+  .route-path-ruler span { @apply grid h-5 w-5 place-items-center rounded-sm border border-slate-700/35 bg-[#fffdf7] text-slate-700; }
+  .route-path-ruler span:first-child { @apply border-teal-700 bg-teal-700 text-white; }
+  .route-path-ruler b { @apply text-sm font-normal text-slate-700; }
   .route-module-grid { @apply relative; }
-  .route-module-grid::before { content: ""; position: absolute; z-index: 0; top: 39px; left: 8%; right: 8%; border-top: 1px dashed rgba(15,118,110,.72); }
+  .route-module-grid::before { content: ""; position: absolute; z-index: 0; top: 39px; left: 8%; right: 8%; border-top: 1px dashed rgba(23,38,58,.48); }
   .track-card { @apply relative overflow-hidden rounded-md border border-slate-950/15 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_25px_rgba(23,38,58,0.14)] focus-visible:ring-2 focus-visible:ring-teal-600; }
-  .track-card::before { content: ""; position: absolute; z-index: 5; left: 0; top: 0; width: 100%; height: 5px; background: repeating-linear-gradient(90deg, #0f9d8a 0 14px, transparent 14px 21px); opacity: .95; }
-  .track-card:not(:last-child)::after { content: ""; position: absolute; z-index: 10; top: 39px; right: -17px; width: 16px; height: 1px; background: #0f766e; box-shadow: 0 0 0 3px rgba(248,244,233,.94); }
+  .track-card::before { content: ""; position: absolute; z-index: 5; left: 0; top: 0; width: 100%; height: 5px; background: repeating-linear-gradient(90deg, #17263a 0 14px, transparent 14px 21px); opacity: .95; }
+  .route-path-stop:first-child::before { background: repeating-linear-gradient(90deg, #0f9d8a 0 14px, transparent 14px 21px); }
+  .track-card:not(:last-child)::after { content: "→"; position: absolute; z-index: 10; top: 27px; right: -19px; display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid rgba(23,38,58,.32); background: #fffdf7; color: #17263a; font-family: "IBM Plex Mono", monospace; font-size: 12px; box-shadow: 0 0 0 3px rgba(248,244,233,.94); }
   .track-card:not(:last-child)::selection { background: transparent; }
   .track-card-image { @apply absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.035]; }
   .route-coordinate { @apply rounded-sm border border-slate-900/15 bg-[#fbf7ee]/95 px-2 py-1 font-mono text-[9px] font-semibold tracking-[0.08em] text-slate-700; }
-  .route-anchor { @apply inline-flex items-center gap-1 rounded-sm border border-teal-800/25 bg-[#fffdf7]/95 px-1.5 py-1 font-mono text-[9px] font-bold tracking-[0.06em] text-teal-900; }
-  .route-anchor i { @apply h-px w-3 bg-teal-700; }
-  .route-status { @apply rounded-sm bg-teal-700/[0.1] px-1.5 py-1 font-mono text-[9px] font-semibold tracking-[0.06em] text-teal-900; }
+  .route-anchor { @apply inline-flex items-center gap-1 rounded-sm border border-slate-700/30 bg-[#fffdf7]/95 px-1.5 py-1 font-mono text-[9px] font-bold tracking-[0.06em] text-slate-700; }
+  .route-anchor i { @apply h-px w-3 bg-slate-700; }
+  .route-path-stop:first-child .route-anchor { @apply border-teal-800/40 text-teal-900; }
+  .route-path-stop:first-child .route-anchor i { @apply bg-teal-700; }
+  .route-status { @apply rounded-sm bg-slate-900/[0.08] px-1.5 py-1 font-mono text-[9px] font-semibold tracking-[0.06em] text-slate-700; }
   .completion-stamp { @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-sm border border-teal-800 px-3 py-2 text-xs font-bold text-teal-800 transition duration-150 hover:bg-teal-700/10 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-teal-600; }
   .completion-stamp-done { @apply border-teal-700 bg-teal-700 text-white hover:bg-teal-800; }
   .note-tab { @apply inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-transparent px-2 py-1.5 text-xs text-slate-600 transition hover:bg-white hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-teal-600; }
   .note-tab-active { @apply border-slate-950/15 bg-white font-bold text-slate-950 shadow-sm; }
-  .reading-paper { @apply bg-[#fffdf7] text-[15px] leading-8 text-slate-700 sm:text-base; }
+  .reading-paper { counter-reset: lab-section; @apply bg-[#fffdf7] text-[15px] leading-8 text-slate-700 sm:text-base; }
   .reading-paper h1, .reading-paper h2, .reading-paper h3 { @apply scroll-mt-5 font-serif font-bold tracking-tight text-slate-950; }
-  .reading-paper h2 { @apply mt-9 border-b border-slate-950/15 pb-2 text-2xl; }
+  .reading-paper h2 { counter-increment: lab-section; @apply mt-9 border-b border-slate-950/15 pb-2 text-2xl; }
+  .reading-paper h2::before { content: "§" counter(lab-section, decimal-leading-zero); display: block; margin-bottom: .35rem; color: #50667a; font-family: "IBM Plex Mono", monospace; font-size: .6rem; font-weight: 700; letter-spacing: .15em; }
   .reading-paper h3 { @apply mt-7 text-xl; }
+  .reading-paper h3::before { content: "↳ "; color: #50667a; font-family: "IBM Plex Mono", monospace; font-size: .72em; }
   .reading-paper p { @apply my-4; }
   .reading-paper a { @apply font-medium text-teal-800 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-950; }
   .reading-paper .wiki-link { @apply rounded-sm border-b border-dashed border-teal-700/55 bg-teal-700/[0.09] px-1 font-semibold no-underline transition duration-150 hover:border-teal-900 hover:bg-teal-700/[0.16] hover:text-teal-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2; }
@@ -100,6 +114,7 @@
   .reading-paper pre { @apply overflow-x-auto rounded-md border border-slate-950/15 bg-slate-950 p-4 shadow-inner; }
   .reading-paper pre code { @apply bg-transparent p-0 text-sm font-normal leading-7 text-slate-100; }
   .reading-paper blockquote { @apply border-l-4 border-teal-700 bg-teal-700/[0.07] py-1 pl-4 font-serif text-slate-700; }
+  .reading-paper blockquote::before { content: "VERIFICATION NOTE"; display: block; margin-bottom: .3rem; color: #0f766e; font-family: "IBM Plex Mono", monospace; font-size: .58rem; font-weight: 700; letter-spacing: .13em; }
   .reading-paper table { @apply my-6 w-full border-collapse overflow-hidden rounded-md text-sm; }
   .reading-paper th { @apply bg-slate-950 px-3 py-2 text-left font-sans text-xs text-white; }
   .reading-paper td { @apply border border-slate-950/15 px-3 py-2 align-top; }
@@ -143,6 +158,7 @@
   .reading-paper { font-size: 0.95rem; }
   .track-card:not(:last-child)::after { display: none; }
   .route-module-grid::before { display: none; }
+  .route-path-ruler { gap: .35rem; }
   .hero-schematic::before { right: -45%; }
   .schematic-code, .schematic-axis { display: none; }
 }
