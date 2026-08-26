@@ -67,7 +67,7 @@ Fabric callback、Paper Listener、Java `Comparator` 與許多 Minecraft registr
 | ⭐ | 泛型｜Generics S 級獨立篇 | ⭐⭐⭐ | `05-modern-java/00-generics.md` |
 | ✅ | Lambda Expression｜Lambda 表達式（含 Method Reference） | ⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ✅ | Functional Interface｜函式式介面 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
-| ⬜ | Stream API | ⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⭐ | Stream API 獨立篇 | ⭐⭐ | `05-modern-java/04-stream-api.md` |
 | ⬜ | Optional | ⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Record | ⭐ | `05-modern-java/01-modern-java.md` |
 | ⭐ | Enum｜列舉 S 級獨立篇 | ⭐⭐⭐ | `05-modern-java/02-enum.md` |
@@ -89,6 +89,12 @@ Enum 特別適合表示編譯時已知的有限集合；如果類型需要由玩
 Annotation 不再只放在現代 Java 總覽中，而是獨立成 `05-modern-java/03-annotations.md`。請依序學習 annotation metadata、Built-in Annotation、Custom Annotation、`@Retention`、`@Target`、SOURCE／CLASS／RUNTIME、Reflection，再進入各 framework 的 annotation consumer。
 
 `@Override` 主要是 compiler contract；`@Inject`、`@Mixin`、`@Environment` 是 Fabric／Mixin toolchain metadata；`@Nullable` 要看 provider；`@Mod`、`@SubscribeEvent`、Spring、Lombok 與 JUnit 也各自有不同的 loader、container、processor 或 test engine。不要因為語法都以 `@` 開頭，就把它們當成同一種機制。
+
+## Stream API 獨立學習入口
+
+Stream API 不再只放在現代 Java 總覽中，而是獨立成 `05-modern-java/04-stream-api.md`。請依序掌握 source、intermediate operation、terminal operation 與 lazy evaluation，再練習 `stream()`、`filter()`、`map()`、`flatMap()`、`sorted()`、`distinct()`、`limit()`、`collect()`、`toList()`、`reduce()`、`anyMatch()`、`allMatch()` 與 `findFirst()`。
+
+`players.stream().filter(Player::isOnline).map(Player::getName).toList()` 是最重要的閱讀模型。Stream 語法屬於 Java standard library，但玩家、世界、registry、event callback 與 thread contract 仍屬於 Fabric、NeoForge 或 Paper 各自的 API；不要將不同平台型別混用。`parallelStream()` 也不是 Minecraft tick 的通用加速方式，必須先確認 thread ownership 與資料生命週期。
 
 ## Exception
 

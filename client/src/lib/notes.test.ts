@@ -32,6 +32,7 @@ describe("notes", () => {
     const collections = searchNotes("HashMap", "Collections");
     const modern = searchNotes("Lambda", "Java 現代語法");
     const methodReferences = searchNotes("Method Reference", "Java 現代語法");
+    const streams = searchNotes("flatMap", "Java 現代語法");
     const generics = searchNotes("Type Erasure", "Java 現代語法");
     const interfaces = searchNotes("Default Method", "OOP");
     const enums = searchNotes("EnumMap", "Java 現代語法");
@@ -42,6 +43,7 @@ describe("notes", () => {
     expect(collections.some((note) => note.slug === "java-collections")).toBe(true);
     expect(modern.some((note) => note.slug === "modern-java")).toBe(true);
     expect(methodReferences.some((note) => note.slug === "modern-java")).toBe(true);
+    expect(streams.some((note) => note.slug === "java-stream-api")).toBe(true);
     expect(generics.some((note) => note.slug === "java-generics")).toBe(true);
     expect(interfaces.some((note) => note.slug === "java-interface")).toBe(true);
     expect(enums.some((note) => note.slug === "java-enum")).toBe(true);

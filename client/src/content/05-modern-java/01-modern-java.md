@@ -87,6 +87,8 @@ interface OnCalibration {
 
 ## Stream API｜Stream API ⭐⭐
 
+Stream API 已拆成獨立 handbook：`05-modern-java/04-stream-api.md`。請在該篇完整學習 source、intermediate operation、terminal operation、lazy evaluation，以及 `filter`、`map`、`flatMap`、`sorted`、`distinct`、`limit`、`collect`、`toList`、`reduce`、`anyMatch`、`allMatch` 與 `findFirst`。本節只保留閱讀現代 Java 程式碼時需要的總覽。
+
 Stream 用 pipeline 處理資料：`filter` 選擇、`map` 轉換、`sorted` 排序、`limit` 截取、`collect` 或 `toList` 終止。Stream 不等於 collection，也不會自動把資料保存回原集合。
 
 ```java
