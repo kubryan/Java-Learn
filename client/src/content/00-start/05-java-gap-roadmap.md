@@ -74,6 +74,7 @@ Fabric callback、Paper Listener、Java `Comparator` 與許多 Minecraft registr
 | ⬜ | Pattern Matching｜模式匹配 | ⭐ | `05-modern-java/01-modern-java.md` |
 | ⭐ | Annotation｜註解 S 級獨立篇 | ⭐⭐⭐ | `05-modern-java/03-annotations.md` |
 | ⭐ | Reflection｜反射 S 級關聯篇 | ⭐⭐⭐ | `05-modern-java/03-annotations.md` |
+| ⭐ | I/O｜輸入輸出獨立篇 | ⭐⭐ | `05-modern-java/05-io.md` |
 | ⬜ | Serialization｜序列化 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Dependency Injection｜依賴注入 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Concurrency｜並行／併發 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
@@ -95,6 +96,12 @@ Annotation 不再只放在現代 Java 總覽中，而是獨立成 `05-modern-jav
 Stream API 不再只放在現代 Java 總覽中，而是獨立成 `05-modern-java/04-stream-api.md`。請依序掌握 source、intermediate operation、terminal operation 與 lazy evaluation，再練習 `stream()`、`filter()`、`map()`、`flatMap()`、`sorted()`、`distinct()`、`limit()`、`collect()`、`toList()`、`reduce()`、`anyMatch()`、`allMatch()` 與 `findFirst()`。
 
 `players.stream().filter(Player::isOnline).map(Player::getName).toList()` 是最重要的閱讀模型。Stream 語法屬於 Java standard library，但玩家、世界、registry、event callback 與 thread contract 仍屬於 Fabric、NeoForge 或 Paper 各自的 API；不要將不同平台型別混用。`parallelStream()` 也不是 Minecraft tick 的通用加速方式，必須先確認 thread ownership 與資料生命週期。
+
+## I/O 獨立學習入口
+
+I/O 不再只放在其他主題的零散範例中，而是獨立成 `05-modern-java/05-io.md`。請依序掌握 `Path`、`Files`、文字與 binary data 的差異，再練習 `InputStream`、`OutputStream`、`Reader`、`Writer`、`BufferedReader`、`BufferedWriter` 與 try-with-resources。
+
+JavaBase 的本地 Markdown Workspace 正好是 I/O 的實戰場景：Markdown 是唯一真實來源，程式需要安全地 resolve workspace 內的路徑、用 UTF-8 讀寫原稿、掃描 `.md` 建立可重建索引，並把 backup／revision 與錯誤 recovery 分開設計。I/O 語法屬於 Java standard library；resource、config directory、loader lifecycle 與 server thread contract 則要依 Fabric、NeoForge 或其他平台文件判斷。
 
 ## Exception
 

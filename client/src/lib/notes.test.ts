@@ -34,6 +34,7 @@ describe("notes", () => {
     const methodReferences = searchNotes("Method Reference", "Java 現代語法");
     const streams = searchNotes("flatMap", "Java 現代語法");
     const optionals = searchNotes("orElseThrow", "Java 現代語法");
+    const io = searchNotes("BufferedReader", "Java 現代語法");
     const generics = searchNotes("Type Erasure", "Java 現代語法");
     const interfaces = searchNotes("Default Method", "OOP");
     const enums = searchNotes("EnumMap", "Java 現代語法");
@@ -46,6 +47,7 @@ describe("notes", () => {
     expect(methodReferences.some((note) => note.slug === "modern-java")).toBe(true);
     expect(streams.some((note) => note.slug === "java-stream-api")).toBe(true);
     expect(optionals.some((note) => note.slug === "modern-java")).toBe(true);
+    expect(io.some((note) => note.slug === "java-io")).toBe(true);
     expect(generics.some((note) => note.slug === "java-generics")).toBe(true);
     expect(interfaces.some((note) => note.slug === "java-interface")).toBe(true);
     expect(enums.some((note) => note.slug === "java-enum")).toBe(true);

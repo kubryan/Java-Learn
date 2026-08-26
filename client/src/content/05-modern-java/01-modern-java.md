@@ -280,6 +280,18 @@ Arrays.stream(type.getDeclaredMethods())
 
 Minecraft mod 的 mapping、obfuscation 與 loader 生命週期使 reflection 更需要謹慎。若官方 API 有 typed method、event 或 registry，優先使用官方 contract；不要用 reflection 繞過 access restriction 或硬編碼未承諾的內部名稱。
 
+## I/O｜輸入輸出 ⭐⭐
+
+Java I/O 已拆成獨立 handbook：`05-modern-java/05-io.md`。請在該篇學習 `Path`、`Files`、`InputStream`、`OutputStream`、`Reader`、`Writer`、`BufferedReader`、`BufferedWriter`、UTF-8、try-with-resources 與本地 Markdown Workspace 的讀寫分層。[7] 本節只保留總覽：文字檔優先考慮明確 charset 的文字 API，圖片、ZIP 與其他 binary data 則使用 byte stream。
+
+```java
+Path note = Path.of("workspace", "notes", "io.md");
+String markdown = Files.readString(note, StandardCharsets.UTF_8);
+Files.writeString(note, markdown, StandardCharsets.UTF_8);
+```
+
+I/O 的檔案操作不能取代路徑安全、權限處理、backup／revision 與錯誤 recovery。Minecraft resource 也不一定是可寫的普通 `Path`；要依 Fabric、NeoForge 或其他平台的 resource 與 config contract 使用對應 API。
+
 ## Serialization｜序列化 ⭐⭐
 
 Serialization 是把物件狀態轉換成可保存或傳送的格式，再還原成資料。對 Minecraft 來說，常見形式包括 NBT／Codec、payload buffer、JSON、設定檔與資料生成輸出；不要把 Java 原生 `ObjectOutputStream` 當成跨版本遊戲資料格式。
@@ -375,3 +387,4 @@ Reflection（只在真的需要時）
 [4]: https://dev.java/learn/annotations/ "Annotations — Dev.java"
 [5]: https://dev.java/learn/reflection/ "Reflection — Dev.java"
 [6]: https://docs.oracle.com/en/java/javase/22/docs/api/java.base/java/util/Optional.html "Optional — Java SE 22 API"
+[7]: https://dev.java/learn/java-io/ "The Java I/O API — Dev.java"
