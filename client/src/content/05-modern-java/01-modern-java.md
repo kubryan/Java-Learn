@@ -104,14 +104,95 @@ Stream pipeline 盡量保持無副作用，不要在 `map` 裡修改外部的 `A
 
 ## Optional｜Optional
 
-`Optional<T>` 表達「可能有值，也可能沒有值」，適合作為回傳型別，避免呼叫端忘記處理空值；不建議把 Optional 當成每個 field 或 method parameter。
+`Optional<T>` 是用來表達「可能有值，也可能沒有值」的 API，最適合作為 method 的回傳型別，讓呼叫端明確處理缺值情況。[6] 它不是把所有 `null` 全面取代的容器，也不應機械式地拿來包住每個 field、method parameter 或 Minecraft API 回傳值；先遵循原 API 的 nullability 與生命週期契約。
+
+### 建立 Optional：`of`、`ofNullable`、`empty`
+
+| API | 行為 | 適合時機 |
+|---|---|---|
+| `Optional.of(value)` | 建立有值的 Optional；若 `value` 是 `null`，立即丟出 `NullPointerException` | 你已經確定 value 不可能是 null |
+| `Optional.ofNullable(value)` | value 非 null 時建立有值結果，value 是 null 時得到 empty | 外部輸入或舊 API 可能回傳 null |
+| `Optional.empty()` | 明確建立沒有值的 Optional | method 沒有可回傳結果時 |
+
+```java
+Optional<String> certain = Optional.of("minecraft:stone");
+Optional<String> maybe = Optional.ofNullable(findSelectedId());
+Optional<String> none = Optional.empty();
+```
+
+`of` 與 `ofNullable` 的差異很重要：如果 null 是違反程式契約的 bug，`of` 能立刻讓問題暴露；如果 null 代表「查不到」，使用 `ofNullable` 或直接回傳 `empty()` 比較適合。
+
+### `map`：有值才轉換
+
+`map(Function)` 只在 Optional 有值時執行轉換；如果是 empty，結果仍是 empty。它適合把「可能存在的玩家」轉成「可能存在的玩家名稱」，而不必先手動寫一層 null check。
+
+```java
+Optional<String> id = Optional.ofNullable(findSelectedId())
+        .map(String::trim)
+        .filter(value -> !value.isBlank())
+        .map(String::toLowerCase);
+```
+
+若 mapper 回傳 null，`map` 會把結果視為 empty。這能讓簡單的一對一轉換保持在同一條 Optional pipeline 中，但不要把每個多步驟業務流程都壓成難讀的鏈式呼叫。
+
+### `flatMap`：避免巢狀 Optional
+
+當轉換 method 本身已經回傳 `Optional<R>` 時，使用 `map` 會得到 `Optional<Optional<R>>`；`flatMap` 會把內層 Optional 攤平，結果仍是 `Optional<R>`。
+
+```java
+Optional<String> selectedId = Optional.of("minecraft:stone");
+Optional<BlockInfo> block = selectedId.flatMap(BlockRegistry::find);
+```
+
+這裡的 `BlockRegistry.find(String)` 示意一個「查詢可能找不到 block」的 method，回傳型別是 `Optional<BlockInfo>`。在 Minecraft 實際專案中，請依 Fabric、NeoForge 或其他 API 的正式 lookup／registry contract 判斷，不要為了使用 Optional 而包裝本來已有明確 result type 的 API。
+
+### 讀取結果：`orElse`、`orElseGet`、`orElseThrow`
 
 ```java
 Optional<String> selected = Optional.ofNullable(findSelectedId());
-String id = selected.filter(value -> !value.isBlank()).orElse("minecraft:stone");
+
+String id = selected.orElse("minecraft:stone");
+String lazyId = selected.orElseGet(this::defaultBlockId);
+String requiredId = selected.orElseThrow(
+        () -> new IllegalStateException("selected block is required")
+);
 ```
 
-不要直接呼叫 `get()` 期待一定有值；使用 `orElse`、`orElseGet`、`orElseThrow` 或 `ifPresent`。Minecraft API 若本身回傳 nullable 或使用特定 result type，請遵循該 API 契約，不要為了套 Optional 而包裝所有資料。
+三個 API 的決策方式如下：
+
+| API | 有值時 | 沒有值時 | 重要差異 |
+|---|---|---|---|
+| `orElse(value)` | 回傳現有值 | 回傳 fallback value | fallback expression 會先被計算，即使最後用不到 |
+| `orElseGet(supplier)` | 回傳現有值 | 呼叫 Supplier 取得 fallback | fallback 需要計算、I/O 或建立物件時較適合 |
+| `orElseThrow(supplier)` | 回傳現有值 | 建立並丟出指定 exception | 適合缺值代表違反前置條件的情況 |
+
+`orElse` 與 `orElseGet` 的結果通常相同，但執行時機不同：
+
+```java
+// expensiveDefault() 即使 selected 有值，也可能先被執行
+String eager = selected.orElse(expensiveDefault());
+
+// 只有 selected 為 empty 時才呼叫 expensiveDefault()
+String lazy = selected.orElseGet(this::expensiveDefault);
+```
+
+沒有明寫 exception supplier 的 `orElseThrow()` 會在 empty 時丟出 `NoSuchElementException`；若缺值需要更有意義的錯誤訊息，使用 `orElseThrow(() -> new ...Exception(...))`。不要把 `get()` 當成預設讀取方式；它把「可能沒有值」重新變成未說明的例外風險。
+
+### Optional 與 Minecraft 查詢
+
+以 loader-neutral 的玩家查詢為例，Optional 可以表達「第一個符合條件的玩家可能不存在」，再由呼叫端決定 fallback、忽略或丟出錯誤：
+
+```java
+Optional<Player> firstOnline = players.stream()
+        .filter(Player::isOnline)
+        .findFirst();
+
+String displayName = firstOnline
+        .map(Player::getName)
+        .orElse("No online player");
+```
+
+這種寫法不代表 Fabric、NeoForge、Paper 具有相同的 `Player` API；共通的是 Java `Optional` 的處理方式，玩家型別、thread contract 與查詢來源仍要使用目前平台的正式 API。
 
 ## Enum｜列舉 ⭐⭐⭐
 
@@ -293,3 +374,4 @@ Reflection（只在真的需要時）
 [3]: https://dev.java/learn/lambda-expressions/ "Lambda Expressions — Dev.java"
 [4]: https://dev.java/learn/annotations/ "Annotations — Dev.java"
 [5]: https://dev.java/learn/reflection/ "Reflection — Dev.java"
+[6]: https://docs.oracle.com/en/java/javase/22/docs/api/java.base/java/util/Optional.html "Optional — Java SE 22 API"

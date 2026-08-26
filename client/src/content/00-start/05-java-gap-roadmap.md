@@ -68,7 +68,7 @@ Fabric callback、Paper Listener、Java `Comparator` 與許多 Minecraft registr
 | ✅ | Lambda Expression｜Lambda 表達式（含 Method Reference） | ⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ✅ | Functional Interface｜函式式介面 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ⭐ | Stream API 獨立篇 | ⭐⭐ | `05-modern-java/04-stream-api.md` |
-| ⬜ | Optional | ⭐ | `05-modern-java/01-modern-java.md` |
+| ✅ | Optional｜可能沒有值的回傳 API | ⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Record | ⭐ | `05-modern-java/01-modern-java.md` |
 | ⭐ | Enum｜列舉 S 級獨立篇 | ⭐⭐⭐ | `05-modern-java/02-enum.md` |
 | ⬜ | Pattern Matching｜模式匹配 | ⭐ | `05-modern-java/01-modern-java.md` |
@@ -121,7 +121,7 @@ Stream API 不再只放在現代 Java 總覽中，而是獨立成 `05-modern-jav
 
 ## 建議學習順序
 
-若目標是 Fabric 或 NeoForge，建議先完成 `static`、`final`、介面、抽象類別、多型、泛型、`ArrayList`、`HashMap`、`Enum` 與 Annotation，再學習事件 callback、Registry、payload 與 datagen。Lambda、Functional Interface 與 Method Reference 已在 `05-modern-java/01-modern-java.md` 提供最小可用範例；Stream、Optional、Record 與 Pattern Matching 能提升閱讀現代 Java 程式碼的速度，但不必阻塞你先建立第一個模組。
+若目標是 Fabric 或 NeoForge，建議先完成 `static`、`final`、介面、抽象類別、多型、泛型、`ArrayList`、`HashMap`、`Enum` 與 Annotation，再學習事件 callback、Registry、payload 與 datagen。Lambda、Functional Interface 與 Method Reference 已在 `05-modern-java/01-modern-java.md` 提供最小可用範例；Optional 也已在同一篇補齊建立、轉換與 fallback API，但它的定位是表達可能缺值的回傳結果，不是全面取代 null。Stream、Record 與 Pattern Matching 能提升閱讀現代 Java 程式碼的速度，但不必阻塞你先建立第一個模組。
 
 ```text
 型別與作用域
