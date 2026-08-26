@@ -39,8 +39,14 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 | ✅ | 封裝｜Encapsulation | ⭐⭐⭐ | `03-oop/01-objects.md` |
 | ⬜ | 多型｜Polymorphism | ⭐⭐⭐ | `03-oop/02-oop-core-gaps.md` |
 | ⬜ | 抽象類別｜Abstract Class | ⭐⭐⭐ | `03-oop/02-oop-core-gaps.md` |
-| ⬜ | 介面｜Interface | ⭐⭐⭐ | `03-oop/02-oop-core-gaps.md` |
+| ⭐ | 介面｜Interface S 級獨立篇 | ⭐⭐⭐ | `03-oop/03-interface.md` |
 | ⬜ | 組合｜Composition | ⭐⭐ | `03-oop/02-oop-core-gaps.md` |
+
+## S 級核心：Interface 獨立學習入口
+
+Interface 不再只放在 OOP 缺口總覽中，而是獨立成一篇 S 級 handbook：`03-oop/03-interface.md`。請依序學習 interface contract、`implements`、default method、static method、Functional Interface、multiple interface conflict，再比較 Interface、Abstract Class 與 Composition。
+
+Fabric callback、Paper Listener、Java `Comparator` 與許多 Minecraft registry／event contract 都會使用 interface。這篇會特別區分 Java 共通語法與 Fabric、NeoForge、Paper 各自的 API，避免把不同 loader 的註冊生命週期混為一談。
 
 ## Collections
 
