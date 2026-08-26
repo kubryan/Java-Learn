@@ -260,6 +260,14 @@ export async function syncKnowledgeIndex(notes: Note[]): Promise<KnowledgeStats>
   return buildKnowledgeStats([...records, ...customRecords]);
 }
 
+export async function resetKnowledgeIndex() {
+  const database = await openDatabase();
+  const transaction = database.transaction([RECORDS_STORE, META_STORE], "readwrite");
+  transaction.objectStore(RECORDS_STORE).clear();
+  transaction.objectStore(META_STORE).clear();
+  await transactionDone(transaction);
+}
+
 export async function getKnowledgeStats(): Promise<KnowledgeStats> {
   return buildKnowledgeStats(await readAllRecords());
 }
