@@ -26,4 +26,16 @@ describe("notes", () => {
     expect(fabricNotes.length).toBeGreaterThan(0);
     expect(fabricNotes.every((note) => note.tags.includes("Fabric"))).toBe(true);
   });
+
+  it("indexes the Java gap roadmap and Minecraft-priority handbooks", () => {
+    const roadmap = notes.find((note) => note.slug === "java-gap-roadmap");
+    const collections = searchNotes("HashMap", "Collections");
+    const modern = searchNotes("Generics", "Java 現代語法");
+    const jvm = searchNotes("Class Loader", "JVM");
+
+    expect(roadmap?.tags).toEqual(expect.arrayContaining(["Minecraft Java", "checklist"]));
+    expect(collections.some((note) => note.slug === "java-collections")).toBe(true);
+    expect(modern.some((note) => note.slug === "modern-java")).toBe(true);
+    expect(jvm.some((note) => note.slug === "java-jvm")).toBe(true);
+  });
 });
