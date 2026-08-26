@@ -11,6 +11,8 @@ summary: 補齊現代 Java 開發常用語法與 API，並標出哪些概念會�
 
 # 現代 Java：泛型、Lambda、Stream、Enum、Annotation 與併發
 
+> **S 級先修：** Generics 請先閱讀獨立章節 `05-modern-java/00-generics.md`。那篇完整拆解 Type Parameter、Generic Class、Generic Method、Bounded Type Parameter、Wildcard、`? extends`、`? super` 與 Type Erasure；本篇只保留現代 Java 的整體對照與後續主題。
+
 現代 Java 的重點不是把每個新語法都用上，而是讓型別、資料流、契約與生命週期更清楚。Dev.java 將 Generics、Lambda、Annotations、Pattern Matching、Stream API、Reflection 與 Virtual Threads 分成獨立的學習主題；本篇將它們整理成 Minecraft Java 開發可以循序使用的工具箱。[1]
 
 ## 泛型｜Generics ⭐⭐⭐

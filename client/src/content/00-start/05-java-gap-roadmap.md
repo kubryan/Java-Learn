@@ -56,21 +56,21 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 
 ## Java 現代語法
 
-| 狀態 | 主題 | Minecraft 優先級 |
-|---|---|---:|
-| ⬜ | 泛型｜Generics | ⭐⭐⭐ |
-| ⬜ | Lambda Expression｜Lambda 表達式 | ⭐⭐ |
-| ⬜ | Functional Interface｜函式式介面 | ⭐⭐ |
-| ⬜ | Stream API | ⭐⭐ |
-| ⬜ | Optional | ⭐ |
-| ⬜ | Record | ⭐ |
-| ⬜ | Enum｜列舉 | ⭐⭐⭐ |
-| ⬜ | Pattern Matching｜模式匹配 | ⭐ |
-| ⬜ | Annotation｜註解 | ⭐⭐⭐ |
-| ⬜ | Reflection｜反射 | ⭐⭐⭐ |
-| ⬜ | Serialization｜序列化 | ⭐⭐ |
-| ⬜ | Dependency Injection｜依賴注入 | ⭐⭐ |
-| ⬜ | Concurrency｜並行／併發 | ⭐⭐⭐ |
+| 狀態 | 主題 | Minecraft 優先級 | JavaBase 入口 |
+|---|---|---:|---|
+| ⭐ | 泛型｜Generics S 級獨立篇 | ⭐⭐⭐ | `05-modern-java/00-generics.md` |
+| ⬜ | Lambda Expression｜Lambda 表達式 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Functional Interface｜函式式介面 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Stream API | ⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Optional | ⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Record | ⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Enum｜列舉 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Pattern Matching｜模式匹配 | ⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Annotation｜註解 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Reflection｜反射 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Serialization｜序列化 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Dependency Injection｜依賴注入 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⬜ | Concurrency｜並行／併發 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
 
 ## Exception
 
@@ -115,7 +115,9 @@ Fabric / NeoForge API
 JVM 效能與模組除錯
 ```
 
-## 對 Minecraft Java 開發最重要的十個主題
+## S 級核心：Generics 獨立學習入口
+
+Generics 不再只放在現代 Java 總覽中，而是獨立成一篇 S 級 handbook：`05-modern-java/00-generics.md`。請依序學習 Type Parameter、Generic Class、Generic Method、Bounded Type Parameter、Wildcard、`? extends`、`? super` 與 Type Erasure，再回頭讀現代 Java 總覽中的 Lambda、Stream、Record 與 Concurrency。
 
 第一優先是 **Interface、Generics、HashMap、ArrayList、Enum、Annotation、Reflection、Concurrency**；第二優先是 **Lambda** 與 **Dependency Injection**。這些主題會直接出現在 loader API 的事件訂閱、註冊器、資料生成、payload 型別、callback 與遊戲狀態管理中。學習時不要只看名詞，請把每篇的練習改寫成一個小型 registry、event handler 或 data object。
 
