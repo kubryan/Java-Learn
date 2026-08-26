@@ -148,3 +148,60 @@ export async function migrateLegacyCustomKnowledgeToMarkdown() {
   if (result.writtenIds.length) await removeCustomKnowledgeRecords(result.writtenIds);
   return { migrated: result.writtenIds.length, remaining: legacy.length - result.writtenIds.length, failures: result.failures };
 }
+
+export type MarkdownWorkspaceScan = {
+  files: { path: string; modifiedAt: string; bytes: number }[];
+  scannedAt: string;
+};
+
+async function localRead(path: string) {
+  const response = await fetch("/api/local/read", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path }) });
+  const result = await response.json().catch(() => ({ ok: false, error: "本機檔案服務未回傳可讀資料。" }));
+  if (!response.ok || !result.ok) throw new Error(result.error || "無法讀取 Markdown 檔案。");
+  return result as { ok: true; content: string; hash: string; modifiedAt: string };
+}
+
+async function localGet<T>(endpoint: string) {
+  const response = await fetch(`/api/local/${endpoint}`, { cache: "no-store" });
+  const result = await response.json().catch(() => ({ ok: false, error: "本機檔案服務未回傳可讀資料。" }));
+  if (!response.ok || !result.ok) throw new Error(result.error || "本機檔案操作未完成。");
+  return result as T & { ok: true };
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+export async function importMarkdownFile(file: File, directory = "knowledge") {
+  if (!isLocalWorkspaceAvailable()) throw new Error("Markdown 匯入只在 localhost 本機開發伺服器可用。");
+  if (!file.name.toLowerCase().endsWith(".md")) throw new Error("只允許匯入 .md Markdown 檔案。");
+  if (file.size > 2 * 1024 * 1024) throw new Error("Markdown 檔案不可超過 2 MB。");
+  await ensureFolder(directory);
+  await localRequest("import", { directory, filename: file.name, content: await file.text() });
+  return `${directory}/${file.name}`;
+}
+
+export async function exportMarkdownFile(notePath: string, title = "markdown-note") {
+  if (!isLocalWorkspaceAvailable()) throw new Error("Markdown 匯出只在 localhost 本機開發伺服器可用。");
+  const relativePath = notePath.replace(/^content\//, "");
+  const result = await localRead(relativePath);
+  downloadBlob(new Blob([result.content], { type: "text/markdown;charset=utf-8" }), `${safeFileSegment(title)}.md`);
+  return result.content;
+}
+
+export async function exportMarkdownWorkspace() {
+  if (!isLocalWorkspaceAvailable()) throw new Error("整個知識庫匯出只在 localhost 本機開發伺服器可用。");
+  const response = await fetch("/api/local/export", { cache: "no-store" });
+  if (!response.ok) throw new Error("無法匯出 Markdown 知識庫。");
+  downloadBlob(await response.blob(), `JavaBase-knowledge-base-${new Date().toISOString().slice(0, 10)}.zip`);
+}
+
+export async function rescanMarkdownWorkspace() {
+  if (!isLocalWorkspaceAvailable()) throw new Error("重新掃描只在 localhost 本機開發伺服器可用。");
+  return localGet<MarkdownWorkspaceScan>("rescan");
+}

@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import { deflateRawSync } from "node:zlib";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
@@ -207,6 +208,58 @@ function vitePluginStorageProxy(): Plugin {
   };
 }
 
+function crc32(value: Buffer) {
+  let crc = 0xffffffff;
+  for (const byte of value) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function createZipArchive(entries: { name: string; data: Buffer }[]) {
+  const localParts: Buffer[] = [];
+  const centralParts: Buffer[] = [];
+  let offset = 0;
+  entries.forEach(({ name, data }) => {
+    const nameBuffer = Buffer.from(name, "utf8");
+    const compressed = deflateRawSync(data);
+    const checksum = crc32(data);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(0x0800, 6);
+    local.writeUInt16LE(8, 8);
+    local.writeUInt32LE(checksum, 14);
+    local.writeUInt32LE(compressed.length, 18);
+    local.writeUInt32LE(data.length, 22);
+    local.writeUInt16LE(nameBuffer.length, 26);
+    localParts.push(local, nameBuffer, compressed);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(0x0800, 8);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt32LE(checksum, 16);
+    central.writeUInt32LE(compressed.length, 20);
+    central.writeUInt32LE(data.length, 24);
+    central.writeUInt16LE(nameBuffer.length, 28);
+    central.writeUInt32LE(offset, 42);
+    centralParts.push(central, nameBuffer);
+    offset += local.length + nameBuffer.length + compressed.length;
+  });
+  const localData = Buffer.concat(localParts);
+  const centralData = Buffer.concat(centralParts);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(entries.length, 8);
+  end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(centralData.length, 12);
+  end.writeUInt32LE(localData.length, 16);
+  return Buffer.concat([localData, centralData, end]);
+}
+
 function vitePluginLocalKnowledgeManager(): Plugin {
   const contentRoot = path.join(PROJECT_ROOT, "client", "src", "content");
   const backupRoot = path.join(PROJECT_ROOT, "local-backups");
@@ -219,9 +272,9 @@ function vitePluginLocalKnowledgeManager(): Plugin {
   const body = (req: any) => new Promise<any>((resolve, reject) => { let value = ""; req.on("data", (chunk: Buffer) => value += chunk); req.on("end", () => { try { resolve(JSON.parse(value || "{}")); } catch (error) { reject(error); } }); });
   const backup = (target: string) => { if (!fs.existsSync(target)) return; fs.mkdirSync(backupRoot, { recursive: true }); const sourceLabel = path.relative(contentRoot, target).replace(/[\\/]/g, "__"); fs.copyFileSync(target, path.join(backupRoot, `${Date.now()}-${crypto.randomUUID()}-${sourceLabel}`)); };
   const digest = (value: string) => crypto.createHash("sha256").update(value, "utf8").digest("hex");
-  return { name: "local-knowledge-manager", configureServer(server) { server.middlewares.use("/api/local", async (req, res) => {
+  return { name: "local-knowledge-manager", configureServer(server) { const invalidateMarkdownModules = () => server.moduleGraph.invalidateAll(); server.middlewares.use("/api/local", async (req, res) => {
     if (req.socket.remoteAddress && !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress)) { res.writeHead(403); res.end("Local access only"); return; }
-    try { const input = req.method === "GET" ? {} : await body(req); if (req.url === "/meta" && req.method === "GET") { const files: { path: string; modifiedAt: string }[] = []; const walk = (directory: string) => fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => { const target = path.join(directory, entry.name); if (entry.isDirectory()) walk(target); else if (entry.name.endsWith(".md")) files.push({ path: path.relative(contentRoot, target).replace(/\\/g, "/"), modifiedAt: fs.statSync(target).mtime.toISOString() }); }); walk(contentRoot); res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: true, files })); return; } if (req.url === "/create" && req.method === "POST") { const relative = String(input.path || "").replace(/\\/g, "/"); const target = safePath(relative); if (fs.existsSync(target)) throw new Error("檔案或資料夾已存在。"); if (input.kind === "folder") fs.mkdirSync(target, { recursive: true }); else { if (!relative.endsWith(".md")) throw new Error("只能建立 Markdown 筆記。"); const title = String(input.title || path.basename(relative, ".md")).replace(/\r?\n/g, " ").trim(); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, `---\ntitle: ${title}\nslug: ${path.basename(relative, ".md")}\ncategory: 自訂\ntags:\n  - 本地 Markdown\nsummary: 本地 Markdown Workspace 筆記。\n---\n\n# ${title}\n`, "utf8"); } }
+    try { const input = req.method === "GET" ? {} : await body(req); if ((req.url === "/meta" || req.url === "/rescan") && req.method === "GET") { const files: { path: string; modifiedAt: string; bytes: number }[] = []; const walk = (directory: string) => fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => { const target = path.join(directory, entry.name); if (entry.isDirectory()) walk(target); else if (entry.name.endsWith(".md")) { const stats = fs.statSync(target); files.push({ path: path.relative(contentRoot, target).replace(/\\/g, "/"), modifiedAt: stats.mtime.toISOString(), bytes: stats.size }); } }); walk(contentRoot); res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify({ ok: true, files, scannedAt: new Date().toISOString() })); invalidateMarkdownModules(); return; } if (req.url === "/export" && req.method === "GET") { const entries: { name: string; data: Buffer }[] = []; const walk = (directory: string) => fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => { const target = path.join(directory, entry.name); if (entry.isDirectory()) walk(target); else if (entry.name.endsWith(".md")) entries.push({ name: path.relative(contentRoot, target).replace(/\\/g, "/"), data: fs.readFileSync(target) }); }); walk(contentRoot); const archive = createZipArchive(entries); res.writeHead(200, { "Content-Type": "application/zip", "Content-Disposition": 'attachment; filename="JavaBase-knowledge-base.zip"', "Content-Length": archive.length, "Cache-Control": "no-store" }); res.end(archive); return; } if (req.url === "/create" && req.method === "POST") { const relative = String(input.path || "").replace(/\\/g, "/"); const target = safePath(relative); if (fs.existsSync(target)) throw new Error("檔案或資料夾已存在。"); if (input.kind === "folder") fs.mkdirSync(target, { recursive: true }); else { if (!relative.endsWith(".md")) throw new Error("只能建立 Markdown 筆記。"); const title = String(input.title || path.basename(relative, ".md")).replace(/\r?\n/g, " ").trim(); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, `---\ntitle: ${title}\nslug: ${path.basename(relative, ".md")}\ncategory: 自訂\ntags:\n  - 本地 Markdown\nsummary: 本地 Markdown Workspace 筆記。\n---\n\n# ${title}\n`, "utf8"); } }
     else if (req.url === "/move" && req.method === "POST") { const from = safePath(String(input.from)); const to = safePath(String(input.to)); if (!from.endsWith(".md") || !to.endsWith(".md")) throw new Error("只能移動 Markdown 筆記。"); if (fs.existsSync(to)) throw new Error("目標筆記已存在。"); backup(from); fs.mkdirSync(path.dirname(to), { recursive: true }); fs.renameSync(from, to); }
     else if (req.url === "/rename" && req.method === "POST") { const from = safePath(String(input.from)); const to = safePath(String(input.to)); if (!from.endsWith(".md") || !to.endsWith(".md")) throw new Error("只能重新命名 Markdown 筆記。"); if (fs.existsSync(to)) throw new Error("目標檔名已存在。"); backup(from); fs.renameSync(from, to); }
     else if (req.url === "/delete" && req.method === "POST") { const target = safePath(String(input.path)); if (!target.endsWith(".md") || !fs.existsSync(target)) throw new Error("找不到可刪除的 Markdown 筆記。"); backup(target); fs.unlinkSync(target); }
@@ -229,7 +282,7 @@ function vitePluginLocalKnowledgeManager(): Plugin {
     else if (req.url === "/write" && req.method === "POST") { const target = safePath(String(input.path)); const content = input.content; if (!target.endsWith(".md") || !fs.existsSync(target)) throw new Error("找不到可寫入的 Markdown 筆記。"); if (typeof content !== "string" || !content.trim()) throw new Error("Markdown 內容不可為空白。"); if (Buffer.byteLength(content, "utf8") > 2 * 1024 * 1024) throw new Error("Markdown 檔案不可超過 2 MB。"); const current = fs.readFileSync(target, "utf8"); if (input.expectedHash && input.expectedHash !== digest(current)) throw new Error("檔案已由其他操作修改，請重新載入後再保存。"); backup(target); internalWrites.add(target); fs.writeFileSync(target, content, "utf8"); const updatedAt = fs.statSync(target).mtime.toISOString(); res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: true, hash: digest(content), modifiedAt: updatedAt })); return; }
     else if (req.url === "/restore" && req.method === "POST") { const target = safePath(String(input.path)); const content = input.content; if (input.confirm !== true) throw new Error("還原需要明確確認。"); if (!target.endsWith(".md") || !fs.existsSync(target)) throw new Error("找不到可還原的 Markdown 筆記。"); if (typeof content !== "string" || !content.trim()) throw new Error("還原版本內容不可為空白。"); if (Buffer.byteLength(content, "utf8") > 2 * 1024 * 1024) throw new Error("Markdown 檔案不可超過 2 MB。"); const current = fs.readFileSync(target, "utf8"); if (!input.expectedHash || input.expectedHash !== digest(current)) throw new Error("目前檔案已由其他操作修改；請重新載入版本歷史後再還原。"); backup(target); internalWrites.add(target); fs.writeFileSync(target, content, "utf8"); const updatedAt = fs.statSync(target).mtime.toISOString(); res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: true, hash: digest(content), modifiedAt: updatedAt })); return; }
     else if (req.url === "/import" && req.method === "POST") { const directory = String(input.directory || "").replace(/\\/g, "/"); const filename = path.basename(String(input.filename || "")); const content = input.content; if (!filename.endsWith(".md") || !/^[^\\/]+\.md$/i.test(filename)) throw new Error("只允許匯入單一 .md 檔案。"); if (typeof content !== "string" || !content.trim()) throw new Error("Markdown 內容不可為空白。"); if (Buffer.byteLength(content, "utf8") > 2 * 1024 * 1024) throw new Error("Markdown 檔案不可超過 2 MB。"); const folder = safePath(directory); if (!fs.existsSync(folder) || !fs.statSync(folder).isDirectory()) throw new Error("目標資料夾不存在。"); const target = safePath(path.posix.join(directory, filename)); if (fs.existsSync(target)) throw new Error("目標資料夾已有同名檔案，匯入已取消。"); fs.writeFileSync(target, content, "utf8"); }
-    else { res.writeHead(404); res.end(); return; } res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: true })); } catch (error) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) })); }
+    else { res.writeHead(404); res.end(); return; } if (["/create", "/import", "/move", "/rename", "/delete"].includes(req.url ?? "")) invalidateMarkdownModules(); res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: true })); } catch (error) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) })); }
   }); }, handleHotUpdate(context) { if (internalWrites.delete(context.file)) return []; } };
 }
 

@@ -571,7 +571,7 @@ export default function Home() {
       </header>
 
       <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} actions={commandActions} />
-      <BackupCenter open={backupOpen} onOpenChange={setBackupOpen} />
+      <BackupCenter note={selectedNote} open={backupOpen} onOpenChange={setBackupOpen} />
       <GitWorkspace open={gitOpen} onOpenChange={setGitOpen} />
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>

@@ -50,6 +50,12 @@ summary: 將物品註冊為可被遊戲辨識的資源。
 
 儲存檔案後，本地開發伺服器會自動重載；知識樹、標籤、全文搜尋和本機資料庫會用新的 Markdown 重建索引。若新增資料夾，請直接在 `client/src/content/` 下建立相對應的資料夾。
 
+## Markdown Workspace 匯入、匯出與同步
+
+本機網站的「設定」面板提供四項 Workspace 工具。**匯入 Markdown** 會將單一 `.md` 檔案寫入 `client/src/content/knowledge/`；**匯出目前 Markdown** 會下載正在閱讀的實體檔案；**匯出整個知識庫** 會下載包含 `client/src/content/` 全部 Markdown 的 ZIP；**重新掃描 Markdown** 會重新讀取專案內所有 `.md`，重建 Knowledge Index 與 IndexedDB 搜尋索引。
+
+如果你在 VS Code 修改了 `Minecraft/Fabric.md` 或其他 `client/src/content/` 檔案，回到 JavaBase 後開啟「設定」並按「重新掃描 Markdown」即可同步。這個動作不會覆蓋檔案，也不需要清除瀏覽器資料；它以磁碟上的 Markdown 為準，更新完成後頁面會重新載入最新內容。
+
 ## 在本地網頁直接編輯實體 Markdown
 
 請先用 `corepack pnpm dev` 開啟終端機顯示的本機網址，再從文章右上方選擇「**編輯實體 Markdown**」。左側會讀取目前 `.md` 的完整內容（含 front matter）；按 `Ctrl+S`／`Cmd+S` 或「寫入檔案」會先比對讀取時的版本雜湊，只有檔案尚未被其他操作修改時才會寫回磁碟。

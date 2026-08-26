@@ -105,6 +105,10 @@ export function searchNotes(query: string, category: string, selectedTag = "") {
     const matchesTag = !normalizedTag || note.tags.some((tag) => tag.toLocaleLowerCase() === normalizedTag);
     const haystack = [
       note.title,
+      note.titleEn ?? "",
+      note.topic ?? "",
+      note.terms?.join(" ") ?? "",
+      note.aliases.join(" "),
       note.summary,
       note.tags.join(" "),
       note.body,
