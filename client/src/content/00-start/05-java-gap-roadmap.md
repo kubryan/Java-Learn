@@ -70,13 +70,19 @@ Fabric callback、Paper Listener、Java `Comparator` 與許多 Minecraft registr
 | ⬜ | Stream API | ⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Optional | ⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Record | ⭐ | `05-modern-java/01-modern-java.md` |
-| ⬜ | Enum｜列舉 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⭐ | Enum｜列舉 S 級獨立篇 | ⭐⭐⭐ | `05-modern-java/02-enum.md` |
 | ⬜ | Pattern Matching｜模式匹配 | ⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Annotation｜註解 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Reflection｜反射 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Serialization｜序列化 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Dependency Injection｜依賴注入 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
 | ⬜ | Concurrency｜並行／併發 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
+
+## S 級核心：Enum 獨立學習入口
+
+Enum 不再只放在現代 Java 總覽中，而是獨立成 `05-modern-java/02-enum.md`。請依序學習 Enum constants、Enum fields、Enum methods、Enum constructor、`values()`／`valueOf()`、switch、`EnumSet` 與 `EnumMap`，再進入 Minecraft 的 `Direction`、`InteractionHand`、`InteractionResult` 與工具／狀態設計。
+
+Enum 特別適合表示編譯時已知的有限集合；如果類型需要由玩家、datapack 或其他 mod 在 runtime 擴充，應改評估 registry 或資料驅動設計。不要把 `ordinal()` 當成永久存檔、NBT 或網路 protocol id。
 
 ## Exception
 

@@ -33,6 +33,7 @@ describe("notes", () => {
     const modern = searchNotes("Lambda", "Java 現代語法");
     const generics = searchNotes("Type Erasure", "Java 現代語法");
     const interfaces = searchNotes("Default Method", "OOP");
+    const enums = searchNotes("EnumMap", "Java 現代語法");
     const jvm = searchNotes("Class Loader", "JVM");
 
     expect(roadmap?.tags).toEqual(expect.arrayContaining(["Minecraft Java", "checklist"]));
@@ -40,6 +41,7 @@ describe("notes", () => {
     expect(modern.some((note) => note.slug === "modern-java")).toBe(true);
     expect(generics.some((note) => note.slug === "java-generics")).toBe(true);
     expect(interfaces.some((note) => note.slug === "java-interface")).toBe(true);
+    expect(enums.some((note) => note.slug === "java-enum")).toBe(true);
     expect(jvm.some((note) => note.slug === "java-jvm")).toBe(true);
   });
 });
