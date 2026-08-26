@@ -14,12 +14,28 @@ export type KnowledgeRecord = {
   category: string;
   tags: string[];
   terms: string[];
+  searchText: string;
+  preview: string;
+  path: string;
+  origin: "markdown" | "glossary";
+};
+
+export type LegacyCustomKnowledgeRecord = {
+  id: string;
+  kind: "custom";
+  title: string;
+  titleEn: string;
+  category: string;
+  tags: string[];
+  terms: string[];
   content: string;
   preview: string;
   path: string;
-  origin: "markdown" | "glossary" | "local";
+  origin: "local";
   createdAt?: string;
 };
+
+type StoredKnowledgeRecord = KnowledgeRecord | LegacyCustomKnowledgeRecord;
 
 export type CustomKnowledgeInput = {
   title: string;
@@ -31,7 +47,7 @@ export type CustomKnowledgeInput = {
 };
 
 export type KnowledgeSearchResult = {
-  record: KnowledgeRecord;
+  record: StoredKnowledgeRecord;
   score: number;
   matchedIn: string[];
   matchedTokens: string[];
@@ -182,7 +198,7 @@ export function buildKnowledgeRecords(notes: Note[]): KnowledgeRecord[] {
       category: note.category,
       tags: Array.from(new Set([...note.tags, ...(isCustom && note.topic ? [note.topic] : [])])),
       terms,
-      content: note.body,
+      searchText: note.body,
       preview: note.summary,
       path: note.path,
       origin: "markdown",
@@ -198,7 +214,7 @@ export function buildKnowledgeRecords(notes: Note[]): KnowledgeRecord[] {
       category,
       tags: ["雙語術語", "bilingual glossary", category],
       terms: [term.zh, term.en],
-      content: `${term.zh}（${term.en}）。${guide.explanation}`,
+      searchText: `${term.zh}（${term.en}）。${guide.explanation}`,
       preview: `${term.zh} — ${term.en}`,
       path: "client/src/lib/bilingual.ts",
       origin: "glossary",
@@ -211,10 +227,10 @@ export function buildKnowledgeRecords(notes: Note[]): KnowledgeRecord[] {
 async function readAllRecords() {
   const database = await openDatabase();
   const transaction = database.transaction(RECORDS_STORE, "readonly");
-  return requestValue(transaction.objectStore(RECORDS_STORE).getAll()) as Promise<KnowledgeRecord[]>;
+  return requestValue(transaction.objectStore(RECORDS_STORE).getAll()) as Promise<StoredKnowledgeRecord[]>;
 }
 
-function buildKnowledgeStats(records: KnowledgeRecord[]): KnowledgeStats {
+function buildKnowledgeStats(records: StoredKnowledgeRecord[]): KnowledgeStats {
   return {
     total: records.length,
     notes: records.filter((record) => record.kind === "note").length,
@@ -225,7 +241,7 @@ function buildKnowledgeStats(records: KnowledgeRecord[]): KnowledgeStats {
 
 export async function syncKnowledgeIndex(notes: Note[]): Promise<KnowledgeStats> {
   const records = buildKnowledgeRecords(notes);
-  const signature = createHash(records.map((record) => `${record.id}|${record.title}|${record.titleEn}|${record.category}|${record.tags.join(",")}|${record.content}|${record.terms.join(",")}`).join("\n"));
+  const signature = createHash(records.map((record) => `${record.id}|${record.path}|${record.title}|${record.titleEn}|${record.category}|${record.tags.join(",")}|${record.searchText}|${record.terms.join(",")}`).join("\n"));
   const database = await openDatabase();
   const customRecords = (await readAllRecords()).filter((record) => record.kind === "custom" && record.origin === "local");
   const readTransaction = database.transaction(META_STORE, "readonly");
@@ -265,12 +281,12 @@ export async function getKnowledgeTags(): Promise<KnowledgeTag[]> {
   return Array.from(tags.values()).sort((left, right) => right.count - left.count || left.name.localeCompare(right.name, "zh-Hant"));
 }
 
-export async function getCustomKnowledgeRecords() {
-  return (await readAllRecords()).filter((record) => record.kind === "custom");
+export async function getCustomKnowledgeRecords(): Promise<KnowledgeRecord[]> {
+  return (await readAllRecords()).filter((record): record is KnowledgeRecord => record.kind === "custom" && record.origin === "markdown");
 }
 
-export async function getLegacyCustomKnowledgeRecords() {
-  return (await readAllRecords()).filter((record) => record.kind === "custom" && record.origin === "local");
+export async function getLegacyCustomKnowledgeRecords(): Promise<LegacyCustomKnowledgeRecord[]> {
+  return (await readAllRecords()).filter((record): record is LegacyCustomKnowledgeRecord => record.kind === "custom" && record.origin === "local");
 }
 
 export async function removeCustomKnowledgeRecords(ids: string[]) {
@@ -283,23 +299,24 @@ export async function removeCustomKnowledgeRecords(ids: string[]) {
   return ids.length;
 }
 
-export async function replaceCustomKnowledgeRecords(records: KnowledgeRecord[]) {
+export async function replaceCustomKnowledgeRecords(records: LegacyCustomKnowledgeRecord[]) {
   const validRecords = records.filter((record) => record.kind === "custom" && record.origin === "local" && Boolean(record.id) && Boolean(record.title) && Boolean(record.content));
   const database = await openDatabase();
   const transaction = database.transaction(RECORDS_STORE, "readwrite");
   const store = transaction.objectStore(RECORDS_STORE);
-  const existing = await requestValue(store.getAll()) as KnowledgeRecord[];
+  const existing = await requestValue(store.getAll()) as StoredKnowledgeRecord[];
   existing.filter((record) => record.kind === "custom").forEach((record) => store.delete(record.id));
   validRecords.forEach((record) => store.put(record));
   await transactionDone(transaction);
   return validRecords.length;
 }
 
-function scoreRecord(record: KnowledgeRecord, query: string) {
+function scoreRecord(record: StoredKnowledgeRecord, query: string) {
   const normalizedQuery = normalize(query);
   const tokens = searchTokens(query);
   if (!normalizedQuery || !tokens.length) return { score: 1, matchedIn: ["全部索引"], matchedTokens: [] };
 
+  const searchText = "searchText" in record ? record.searchText : record.content;
   const fields = [
     { label: "標題", value: record.title, weight: 150 },
     { label: "檔名", value: record.path.split("/").pop() ?? record.path, weight: 130 },
@@ -307,7 +324,7 @@ function scoreRecord(record: KnowledgeRecord, query: string) {
     { label: "標籤", value: record.tags.join(" "), weight: 105 },
     { label: "雙語術語", value: record.terms.join(" "), weight: 105 },
     { label: "分類", value: record.category, weight: 80 },
-    { label: "Markdown 內容", value: record.content, weight: 52 },
+    { label: "Markdown 內容", value: searchText, weight: 52 },
   ];
 
   const tokenMatches = tokens.map((token) => ({
@@ -338,8 +355,8 @@ export async function searchKnowledge(query: string, category = "全部", select
     .sort((left, right) => right.score - left.score || left.record.title.localeCompare(right.record.title, "zh-Hant"));
 }
 
-export function createKnowledgeSnippet(record: KnowledgeRecord, query: string) {
-  const source = markdownPreview(record.content) || record.preview;
+export function createKnowledgeSnippet(record: StoredKnowledgeRecord, query: string) {
+  const source = markdownPreview("searchText" in record ? record.searchText : record.content) || record.preview;
   const normalizedSource = normalize(source);
   const queryTokens = searchTokens(query);
   const positions = queryTokens.map((token) => normalizedSource.indexOf(token)).filter((position) => position >= 0);

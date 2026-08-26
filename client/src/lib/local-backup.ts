@@ -1,5 +1,5 @@
 /** Design reminder — 藍圖工作桌：備份必須是可驗證、可攜與可回復的安全副本；實體 Markdown 匯出只可走 localhost 檔案服務。 */
-import { getLegacyCustomKnowledgeRecords, removeCustomKnowledgeRecords, replaceCustomKnowledgeRecords, type CustomKnowledgeInput, type KnowledgeRecord } from "./knowledge-db";
+import { getLegacyCustomKnowledgeRecords, removeCustomKnowledgeRecords, replaceCustomKnowledgeRecords, type CustomKnowledgeInput, type LegacyCustomKnowledgeRecord } from "./knowledge-db";
 import { getAllNoteRevisions, replaceAllNoteRevisions, type NoteRevision } from "./note-history";
 
 export const BACKUP_FORMAT = "javabase-local-backup";
@@ -16,7 +16,7 @@ export type JavaBaseBackup = {
   version: typeof BACKUP_VERSION;
   exportedAt: string;
   localStorage: Record<string, string>;
-  customKnowledge: KnowledgeRecord[];
+  customKnowledge: LegacyCustomKnowledgeRecord[];
   noteRevisions: NoteRevision[];
 };
 
@@ -45,7 +45,7 @@ export function validateLocalBackup(value: unknown): JavaBaseBackup {
   if (candidate.format !== BACKUP_FORMAT || candidate.version !== BACKUP_VERSION) throw new Error("這不是相容的 JavaBase 本機備份格式。 ");
   if (typeof candidate.exportedAt !== "string" || !candidate.localStorage || !Array.isArray(candidate.customKnowledge) || !Array.isArray(candidate.noteRevisions)) throw new Error("備份缺少必要資料欄位。 ");
   const safeStorage = Object.fromEntries(Object.entries(candidate.localStorage).filter(([key, entry]) => (STORAGE_KEYS.includes(key) || key.startsWith("java-learning-draft:")) && typeof entry === "string"));
-  const safeCustom = candidate.customKnowledge.filter((record): record is KnowledgeRecord => Boolean(record && record.kind === "custom" && record.origin === "local" && record.id && record.title && typeof record.content === "string"));
+  const safeCustom = candidate.customKnowledge.filter((record): record is LegacyCustomKnowledgeRecord => Boolean(record && record.kind === "custom" && record.origin === "local" && record.id && record.title && typeof record.content === "string"));
   const safeRevisions = candidate.noteRevisions.filter((revision): revision is NoteRevision => Boolean(revision && revision.id && revision.noteSlug && typeof revision.content === "string" && revision.savedAt));
   return { format: BACKUP_FORMAT, version: BACKUP_VERSION, exportedAt: candidate.exportedAt, localStorage: safeStorage, customKnowledge: safeCustom, noteRevisions: safeRevisions };
 }
@@ -72,7 +72,7 @@ function safeFileSegment(value: string) {
   return cleaned || "untitled";
 }
 
-function exportDirectory(record: KnowledgeRecord) {
+function exportDirectory(record: LegacyCustomKnowledgeRecord) {
   const source = `${record.category} ${record.tags.join(" ")}`.toLocaleLowerCase();
   if (/(minecraft|fabric|neoforge|cobblemon|paper|nms)/.test(source)) return "knowledge/Minecraft";
   if (/(java|oop|後端|桌面)/.test(source)) return "knowledge/Java";
@@ -81,7 +81,7 @@ function exportDirectory(record: KnowledgeRecord) {
   return "knowledge/其他";
 }
 
-function markdownFromRecord(record: KnowledgeRecord) {
+function markdownFromRecord(record: LegacyCustomKnowledgeRecord) {
   const tags = Array.from(new Set(["本機自建知識", ...record.tags])).filter(Boolean);
   const terms = Array.from(new Set(record.terms)).filter(Boolean);
   const frontmatter = ["---", `title: ${record.title.replace(/\r?\n/g, " ")}`, "category: 自訂", "tags:", ...tags.map((tag) => `  - ${tag.replace(/\r?\n/g, " ")}`), `summary: ${record.preview.replace(/\r?\n/g, " ")}`, `source: IndexedDB custom knowledge`, `exportedAt: ${new Date().toISOString()}`, `originalId: ${record.id}`, "---"];
@@ -127,7 +127,7 @@ export async function createMarkdownKnowledgeFile(input: CustomKnowledgeInput) {
   return { path: `content/knowledge/${filename}`, slug, title };
 }
 
-export async function exportCustomKnowledgeToMarkdown(records: KnowledgeRecord[]): Promise<MarkdownExportResult> {
+export async function exportCustomKnowledgeToMarkdown(records: LegacyCustomKnowledgeRecord[]): Promise<MarkdownExportResult> {
   const result: MarkdownExportResult = { written: [], conflicts: [], failures: [], writtenIds: [] };
   const folders = Array.from(new Set(records.map(exportDirectory)));
   try { await ensureFolder("knowledge"); await Promise.all(folders.map(ensureFolder)); } catch (error) { throw new Error(error instanceof Error ? error.message : "無法建立 Markdown 匯出資料夾。 "); }

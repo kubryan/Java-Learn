@@ -41,7 +41,7 @@ describe("knowledge-db pure helpers", () => {
         level: "自訂",
         tags: ["本機自建知識"],
         summary: "本地 Markdown Workspace 筆記。",
-        body: "用 try/catch 處理例外。",
+        searchText: "用 try/catch 處理例外。",
         path: "content/knowledge/本地例外處理.md",
       },
     ]);
@@ -71,7 +71,7 @@ describe("knowledge-db pure helpers", () => {
         category: "Java 基礎",
         tags: ["Java"],
         terms: ["variable"],
-        content: "這是一段很長的內容，介紹 variable 如何保存資料，以及 method 如何重用行為。",
+        searchText: "這是一段很長的內容，介紹 variable 如何保存資料，以及 method 如何重用行為。",
         preview: "",
         path: "content/test.md",
         origin: "markdown",

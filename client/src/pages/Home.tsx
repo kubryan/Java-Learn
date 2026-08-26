@@ -68,6 +68,7 @@ import {
   searchKnowledge,
   syncKnowledgeIndex,
   type KnowledgeRecord,
+  type LegacyCustomKnowledgeRecord,
   type KnowledgeSearchResult,
   type KnowledgeStats,
   type KnowledgeTag,
@@ -177,7 +178,7 @@ export default function Home() {
   const [knowledgeOpen, setKnowledgeOpen] = useState(() => ["knowledge", "create"].includes(new URLSearchParams(window.location.search).get("view") ?? ""));
   const [overviewResults, setOverviewResults] = useState<KnowledgeSearchResult[]>([]);
   const [knowledgeView, setKnowledgeView] = useState<"overview" | "create" | "detail">(() => new URLSearchParams(window.location.search).get("view") === "create" ? "create" : "overview");
-  const [selectedCustomKnowledge, setSelectedCustomKnowledge] = useState<KnowledgeRecord | null>(null);
+  const [selectedCustomKnowledge, setSelectedCustomKnowledge] = useState<KnowledgeRecord | LegacyCustomKnowledgeRecord | null>(null);
   const [customKnowledge, setCustomKnowledge] = useState(emptyCustomKnowledge);
   const [formError, setFormError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
@@ -464,6 +465,12 @@ export default function Home() {
   function selectKnowledgeResult(result: KnowledgeSearchResult) {
     const { record } = result;
     if (record.kind === "custom") {
+      const matchedNote = notes.find((note) => `note:${note.slug}` === record.id || note.path === record.path);
+      if (matchedNote) {
+        setKnowledgeOpen(false);
+        openWikiNote(matchedNote);
+        return;
+      }
       setSelectedCustomKnowledge(record);
       setKnowledgeView("detail");
       setKnowledgeOpen(true);
@@ -709,7 +716,7 @@ export default function Home() {
               <div className="space-y-5 px-6 py-6 sm:px-8">
                 <div className="flex flex-wrap gap-1.5">{selectedCustomKnowledge.tags.map((tag) => <button type="button" className="tag-chip transition hover:border-teal-700/40 hover:bg-white" key={tag} onClick={() => { selectTag(tag); setKnowledgeOpen(false); }}>#{tag}</button>)}</div>
                 {selectedCustomKnowledge.terms.length > 0 && <div className="rounded-md border border-teal-800/15 bg-teal-700/[0.05] p-3"><p className="section-label text-teal-800">SEARCH TERMS</p><p className="mt-2 font-mono text-sm leading-6 text-slate-700">{selectedCustomKnowledge.terms.join(" · ")}</p></div>}
-                <article className="whitespace-pre-wrap font-serif text-base leading-8 text-slate-800">{selectedCustomKnowledge.content}</article>
+                <article className="whitespace-pre-wrap font-serif text-base leading-8 text-slate-800">{"searchText" in selectedCustomKnowledge ? selectedCustomKnowledge.searchText : selectedCustomKnowledge.content}</article>
               </div>
               <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-4 sm:px-8"><button type="button" onClick={() => { setSelectedCustomKnowledge(null); setKnowledgeView("overview"); }} className="rounded-md border border-slate-950/15 bg-white px-3 py-2 text-sm font-semibold transition hover:bg-slate-950 hover:text-white">返回總覽</button></DialogFooter>
             </>

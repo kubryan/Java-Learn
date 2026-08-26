@@ -4,13 +4,13 @@ import { ArchiveRestore, Check, Download, FileDown, FileUp, HardDriveDownload, R
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createLocalBackup, downloadBackup, exportMarkdownFile, exportMarkdownWorkspace, importMarkdownFile, restoreLocalBackup, rescanMarkdownWorkspace, summarizeBackup, validateLocalBackup, type BackupSummary, type JavaBaseBackup } from "@/lib/local-backup";
-import { getLegacyCustomKnowledgeRecords, type KnowledgeRecord } from "@/lib/knowledge-db";
+import { getLegacyCustomKnowledgeRecords, type LegacyCustomKnowledgeRecord } from "@/lib/knowledge-db";
 import type { Note } from "@/lib/notes";
 
 const summaryLine = (summary: BackupSummary) => `尚未遷移的舊 custom ${summary.customKnowledge} 筆 · 修改歷史 ${summary.noteRevisions} 筆 · 設定／草稿 ${summary.localStorageEntries} 項`;
 
 export function BackupCenter({ note, open, onOpenChange }: { note: Note; open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [customKnowledge, setCustomKnowledge] = useState<KnowledgeRecord[]>([]);
+  const [customKnowledge, setCustomKnowledge] = useState<LegacyCustomKnowledgeRecord[]>([]);
   const [backup, setBackup] = useState<JavaBaseBackup | null>(null);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
