@@ -35,6 +35,11 @@ describe("notes", () => {
     const streams = searchNotes("flatMap", "Java 現代語法");
     const optionals = searchNotes("orElseThrow", "Java 現代語法");
     const io = searchNotes("BufferedReader", "Java 現代語法");
+    const serialization = searchNotes("JSON", "Java 現代語法");
+    const concurrency = searchNotes("ExecutorService", "Java 現代語法");
+    const debugging = searchNotes("Breakpoint", "Debugging");
+    const projectTools = searchNotes("build.gradle", "Java 工程工具");
+    const jvmDeep = searchNotes("GC Roots", "JVM");
     const generics = searchNotes("Type Erasure", "Java 現代語法");
     const interfaces = searchNotes("Default Method", "OOP");
     const enums = searchNotes("EnumMap", "Java 現代語法");
@@ -48,6 +53,11 @@ describe("notes", () => {
     expect(streams.some((note) => note.slug === "java-stream-api")).toBe(true);
     expect(optionals.some((note) => note.slug === "modern-java")).toBe(true);
     expect(io.some((note) => note.slug === "java-io")).toBe(true);
+    expect(serialization.some((note) => note.slug === "java-serialization")).toBe(true);
+    expect(concurrency.some((note) => note.slug === "java-concurrency")).toBe(true);
+    expect(debugging.some((note) => note.slug === "java-debugging")).toBe(true);
+    expect(projectTools.some((note) => note.slug === "java-project-tools")).toBe(true);
+    expect(jvmDeep.some((note) => note.slug === "java-jvm-deep-dive")).toBe(true);
     expect(generics.some((note) => note.slug === "java-generics")).toBe(true);
     expect(interfaces.some((note) => note.slug === "java-interface")).toBe(true);
     expect(enums.some((note) => note.slug === "java-enum")).toBe(true);

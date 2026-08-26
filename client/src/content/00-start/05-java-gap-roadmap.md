@@ -75,9 +75,9 @@ Fabric callback、Paper Listener、Java `Comparator` 與許多 Minecraft registr
 | ⭐ | Annotation｜註解 S 級獨立篇 | ⭐⭐⭐ | `05-modern-java/03-annotations.md` |
 | ⭐ | Reflection｜反射 S 級關聯篇 | ⭐⭐⭐ | `05-modern-java/03-annotations.md` |
 | ⭐ | I/O｜輸入輸出獨立篇 | ⭐⭐ | `05-modern-java/05-io.md` |
-| ⬜ | Serialization｜序列化 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⭐ | Serialization｜序列化與 JSON 獨立篇 | ⭐⭐ | `05-modern-java/06-serialization.md` |
 | ⬜ | Dependency Injection｜依賴注入 | ⭐⭐ | `05-modern-java/01-modern-java.md` |
-| ⬜ | Concurrency｜並行／併發 | ⭐⭐⭐ | `05-modern-java/01-modern-java.md` |
+| ⭐ | Concurrency｜並行／併發獨立篇 | ⭐⭐⭐ | `05-modern-java/07-concurrency.md` |
 
 ## S 級核心：Enum 獨立學習入口
 
@@ -103,6 +103,25 @@ I/O 不再只放在其他主題的零散範例中，而是獨立成 `05-modern-j
 
 JavaBase 的本地 Markdown Workspace 正好是 I/O 的實戰場景：Markdown 是唯一真實來源，程式需要安全地 resolve workspace 內的路徑、用 UTF-8 讀寫原稿、掃描 `.md` 建立可重建索引，並把 backup／revision 與錯誤 recovery 分開設計。I/O 語法屬於 Java standard library；resource、config directory、loader lifecycle 與 server thread contract 則要依 Fabric、NeoForge 或其他平台文件判斷。
 
+## Debugging｜除錯
+
+| 狀態 | 主題 | Minecraft 優先級 | JavaBase 入口 |
+|---|---|---:|---|
+| ⭐ | Debugging｜除錯與 Stack Trace 獨立篇 | ⭐⭐⭐ | `08-debugging/01-debugging.md` |
+| ⬜ | Breakpoint、Step Over／Into／Out | ⭐⭐⭐ | `08-debugging/01-debugging.md` |
+| ⬜ | Watch、Call Stack、Debug Console | ⭐⭐⭐ | `08-debugging/01-debugging.md` |
+| ⬜ | Exception Stack Trace 與 Root Cause | ⭐⭐⭐ | `08-debugging/01-debugging.md` |
+
+## Java 專案工具
+
+| 狀態 | 主題 | Minecraft 優先級 | JavaBase 入口 |
+|---|---|---:|---|
+| ⭐ | Maven｜`pom.xml` 獨立篇 | ⭐⭐ | `09-project-tools/01-java-project-tools.md` |
+| ⭐ | Gradle｜`build.gradle` 獨立篇 | ⭐⭐⭐ | `09-project-tools/01-java-project-tools.md` |
+| ✅ | Dependency、Repository、Lifecycle、Plugin、Scope | ⭐⭐⭐ | `09-project-tools/01-java-project-tools.md` |
+| ✅ | Task、Gradle Wrapper、`settings.gradle` | ⭐⭐⭐ | `09-project-tools/01-java-project-tools.md` |
+| ⬜ | Fabric Loom、NeoForge Gradle、Paper build | ⭐⭐⭐ | `09-project-tools/01-java-project-tools.md` |
+
 ## Exception
 
 | 狀態 | 主題 | Minecraft 優先級 |
@@ -115,20 +134,21 @@ JavaBase 的本地 Markdown Workspace 正好是 I/O 的實戰場景：Markdown �
 
 ## JVM
 
-| 狀態 | 主題 | Minecraft 優先級 |
-|---|---|---:|
-| ⬜ | JVM｜Java Virtual Machine | ⭐⭐ |
-| ⬜ | JDK｜Java Development Kit | ⭐⭐⭐ |
-| ⬜ | JRE｜Java Runtime Environment | ⭐ |
-| ⬜ | Java Compiler｜Java 編譯器 | ⭐⭐⭐ |
-| ⬜ | Bytecode｜位元組碼 | ⭐⭐ |
-| ⬜ | Class Loader｜類別載入器 | ⭐⭐⭐ |
-| ⬜ | Heap｜堆積、Stack｜堆疊 | ⭐⭐ |
-| ⬜ | Garbage Collection｜垃圾回收 | ⭐⭐ |
+| 狀態 | 主題 | Minecraft 優先級 | JavaBase 入口 |
+|---|---|---:|---|
+| ✅ | JVM｜Java Virtual Machine 基礎 | ⭐⭐ | `07-jvm/01-jvm.md` |
+| ✅ | JDK｜Java Development Kit | ⭐⭐⭐ | `07-jvm/01-jvm.md` |
+| ✅ | JRE｜Java Runtime Environment | ⭐ | `07-jvm/01-jvm.md` |
+| ✅ | Java Compiler｜Java 編譯器 | ⭐⭐⭐ | `07-jvm/01-jvm.md` |
+| ✅ | Bytecode｜位元組碼 | ⭐⭐ | `07-jvm/01-jvm.md` |
+| ✅ | Class Loader｜類別載入器 | ⭐⭐⭐ | `07-jvm/01-jvm.md` |
+| ✅ | Heap｜堆積、Stack｜堆疊 | ⭐⭐ | `07-jvm/01-jvm.md` |
+| ✅ | Garbage Collection｜垃圾回收 | ⭐⭐ | `07-jvm/01-jvm.md` |
+| ⭐ | JVM 深入｜JIT、Metaspace、GC Roots、Memory Leak | ⭐⭐ | `07-jvm/02-jvm-deep-dive.md` |
 
 ## 建議學習順序
 
-若目標是 Fabric 或 NeoForge，建議先完成 `static`、`final`、介面、抽象類別、多型、泛型、`ArrayList`、`HashMap`、`Enum` 與 Annotation，再學習事件 callback、Registry、payload 與 datagen。Lambda、Functional Interface 與 Method Reference 已在 `05-modern-java/01-modern-java.md` 提供最小可用範例；Optional 也已在同一篇補齊建立、轉換與 fallback API，但它的定位是表達可能缺值的回傳結果，不是全面取代 null。Stream、Record 與 Pattern Matching 能提升閱讀現代 Java 程式碼的速度，但不必阻塞你先建立第一個模組。
+若目標是 Fabric 或 NeoForge，建議先完成 `static`、`final`、介面、抽象類別、多型、泛型、`ArrayList`、`HashMap`、`Enum` 與 Annotation，再學習事件 callback、Registry、payload 與 datagen。Lambda、Functional Interface 與 Method Reference 已在 `05-modern-java/01-modern-java.md` 提供最小可用範例；Optional 也已在同一篇補齊建立、轉換與 fallback API，但它的定位是表達可能缺值的回傳結果，不是全面取代 null。Stream、Serialization、Concurrency、Debugging 與 Java project tools 依序連接到真實 mod／plugin 工程；JVM 深入則放在後段，用診斷證據理解 class loading、GC、thread 與 memory leak，而不是一開始就調 JVM flags。
 
 ```text
 型別與作用域
@@ -141,16 +161,20 @@ Annotation + Lambda + Callback
     ↓
 例外處理 + Serialization + Concurrency
     ↓
-Fabric / NeoForge API
+I/O + JSON／Codec + Maven／Gradle
     ↓
-JVM 效能與模組除錯
+Fabric / NeoForge / Paper API
+    ↓
+Debugging + Stack Trace
+    ↓
+JVM 深入與記憶體診斷
 ```
 
 ## S 級核心：Generics 獨立學習入口
 
 Generics 不再只放在現代 Java 總覽中，而是獨立成一篇 S 級 handbook：`05-modern-java/00-generics.md`。請依序學習 Type Parameter、Generic Class、Generic Method、Bounded Type Parameter、Wildcard、`? extends`、`? super` 與 Type Erasure，再回頭讀現代 Java 總覽中的 Lambda、Stream、Record 與 Concurrency。
 
-第一優先是 **Interface、Generics、HashMap、ArrayList、Enum、Annotation、Reflection、Concurrency**；第二優先是 **Lambda** 與 **Dependency Injection**。這些主題會直接出現在 loader API 的事件訂閱、註冊器、資料生成、payload 型別、callback 與遊戲狀態管理中。學習時不要只看名詞，請把每篇的練習改寫成一個小型 registry、event handler 或 data object。
+第一優先是 **Interface、Generics、HashMap、ArrayList、Enum、Annotation、Reflection、Concurrency、Debugging**；第二優先是 **Serialization／JSON、I/O、Maven／Gradle**、Lambda 與 Dependency Injection；JVM 深入排在後段，但在 server crash、tick lag、class loading 與 memory leak 診斷時非常重要。這些主題會直接出現在 loader API 的事件訂閱、註冊器、資料生成、payload 型別、callback 與遊戲狀態管理中。學習時不要只看名詞，請把每篇的練習改寫成一個小型 registry、event handler 或 data object。
 
 ## References
 

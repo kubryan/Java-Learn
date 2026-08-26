@@ -294,16 +294,16 @@ I/O 的檔案操作不能取代路徑安全、權限處理、backup／revision �
 
 ## Serialization｜序列化 ⭐⭐
 
-Serialization 是把物件狀態轉換成可保存或傳送的格式，再還原成資料。對 Minecraft 來說，常見形式包括 NBT／Codec、payload buffer、JSON、設定檔與資料生成輸出；不要把 Java 原生 `ObjectOutputStream` 當成跨版本遊戲資料格式。
+Serialization 已拆成獨立 handbook：`05-modern-java/06-serialization.md`。請在該篇學習 Serialization、Deserialization、JSON、Object Serialization、DTO、schema、版本化、輸入驗證與 Minecraft／Markdown Workspace 的資料邊界。[8] 本節只保留總覽：序列化是 object model 與資料 representation 之間的轉換，JSON、NBT、codec、Markdown 與 Java native serialization 是不同格式或機制，不能混為一談。
 
 ```java
 record PlayerSetting(String mode, int range) {}
 
-String jsonLike = "{mode=SAFE, range=4}"; // 示意：實務請使用專案指定 codec/serializer
 PlayerSetting setting = new PlayerSetting("SAFE", 4);
+// 實務請交給專案指定 JSON／NBT／codec，不要用字串串接取代 serializer。
 ```
 
-序列化格式要有版本策略、輸入驗證與錯誤處理。網路 payload 絕不能信任 client 傳入的數值、座標或權限欄位；在 server 端重新驗證。Fabric 與 NeoForge 的 payload／codec API 不同，請使用對應 handbook 的實作。
+網路 payload 與使用者資料都要在 server／domain boundary 重新驗證；Fabric、NeoForge、Paper 與 backend API 的 payload／codec 不同，請使用對應 handbook 的實作。
 
 ## Dependency Injection｜依賴注入 ⭐⭐
 
@@ -325,17 +325,33 @@ Minecraft mod 通常不需要為了 DI 硬塞完整 enterprise container；但 r
 
 ## Concurrency｜並行／併發 ⭐⭐⭐
 
-Concurrency 是多個工作在時間上交錯進行；parallelism 則是同時使用多核心。`Thread`、`ExecutorService`、`CompletableFuture`、locks、atomic types 與 concurrent collections 都是工具，但必須先定義資料的 owner 與 thread boundary。
+Concurrency 已拆成獨立 handbook：`05-modern-java/07-concurrency.md`。請在該篇學習 `Thread`、`Runnable`、`Executor`、`ExecutorService`、`Future`、`CompletableFuture`、`synchronized`、`Lock`、`volatile`、Atomic、Concurrent Collections 與 Minecraft Thread Safety。本節只保留最重要的判斷：先定義 state owner 與 thread boundary，再決定如何排程、同步、取消與關閉。[9]
 
 ```java
 ExecutorService worker = Executors.newFixedThreadPool(2);
-CompletableFuture<String> task = CompletableFuture.supplyAsync(() -> loadFromDisk(), worker);
+CompletableFuture<String> task = CompletableFuture.supplyAsync(this::loadFromDisk, worker);
 
-task.thenAccept(result -> System.out.println("loaded=" + result))
-    .whenComplete((ignored, error) -> worker.shutdown());
+// Minecraft 實際 scheduler 依 Fabric、NeoForge 或 Paper 而不同。
+task.thenAccept(result -> server.execute(() -> applyToWorld(result)));
 ```
 
-Minecraft 的主 world、entity、registry 與大部分遊戲狀態不能任意從背景 thread 修改。可以在背景 thread 做 I/O 或純計算，再把結果安全排回 server／client thread；不要把 `HashMap` 當成跨 thread 安全容器。需要共享資料時，選擇 immutable snapshot、message passing、`ConcurrentHashMap` 或明確 lock，並測試 race condition。
+Minecraft 的 world、entity、registry 與大部分遊戲狀態不能任意從背景 thread 修改。I/O 或純計算可以放背景 thread，但結果必須安全排回真正的 server／client owner thread；不要把 `HashMap` 或 `ConcurrentHashMap` 當成 world state thread-safe 的通行證。
+
+## Debugging｜除錯與 Stack Trace
+
+Debugging 已加入獨立 handbook：`08-debugging/01-debugging.md`。請依序學習 Breakpoint、Step Over、Step Into、Step Out、Watch、Call Stack、Debug Console 與 Exception Stack Trace，再練習從 `Caused by` 和第一個有意義的自有 frame 找 root cause。[10]
+
+```text
+完整 stack trace
+    ↓
+所有 Caused by
+    ↓
+第一個有意義的自有 frame
+    ↓
+輸入 + caller + thread + lifecycle
+    ↓
+breakpoint／watch／最小重現
+```
 
 ## Minecraft 閱讀順序
 
@@ -388,3 +404,6 @@ Reflection（只在真的需要時）
 [5]: https://dev.java/learn/reflection/ "Reflection — Dev.java"
 [6]: https://docs.oracle.com/en/java/javase/22/docs/api/java.base/java/util/Optional.html "Optional — Java SE 22 API"
 [7]: https://dev.java/learn/java-io/ "The Java I/O API — Dev.java"
+[8]: https://docs.oracle.com/en/java/javase/11/docs/specs/serialization/index.html "Java Object Serialization Specification — Oracle"
+[9]: https://docs.oracle.com/en/java/javase/22/docs/api/java.base/java/util/concurrent/ExecutorService.html "ExecutorService — Java SE 22 API"
+[10]: https://docs.oracle.com/en/java/javase/17/docs/specs/man/jdb.html "The jdb Command — Oracle"
