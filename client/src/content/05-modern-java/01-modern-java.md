@@ -40,12 +40,26 @@ Entry<String, Integer> count = new Entry<>("stone", 12);
 
 ## Lambda Expression｜Lambda 表達式 ⭐⭐
 
-Lambda 是一段可以傳遞的行為，語法通常是 `(parameters) -> expression` 或 `(parameters) -> { statements }`。它不是獨立的 class，而是要放進 functional interface 的 target type。
+Lambda 是一段可以傳遞的行為，語法通常是 `(parameters) -> expression` 或 `(parameters) -> { statements }`。它不是獨立的 class，而是要放進 functional interface 的 target type。閱讀 Lambda 時，先把箭頭左側當成輸入、右側當成回傳或要執行的行為；例如 `x -> x * 2` 就是「接收一個 x，回傳 x 的兩倍」。
+
+```java
+Function<Integer, Integer> doubleValue = x -> x * 2;
+int result = doubleValue.apply(21); // 42
+```
+
+這裡的 `x` 不需要明寫 `Integer`，因為變數宣告的 target type `Function<Integer, Integer>` 已經告訴 compiler：Lambda 接收 `Integer` 並回傳 `Integer`。因此 Lambda 不能脫離 target type 單獨存在；它必須被賦值給 functional interface，或傳入需要該介面的 method。
 
 ```java
 List<String> ids = new ArrayList<>(List.of("stone", "diamond", "dirt"));
 ids.removeIf(id -> id.startsWith("d"));
 ids.forEach(id -> System.out.println("id=" + id));
+```
+
+當 Lambda 只是把參數轉交給既有 method 時，可以改寫成 **Method Reference｜方法參照**。`id -> id.toLowerCase()` 可寫成 `String::toLowerCase`，`id -> System.out.println(id)` 可寫成 `System.out::println`；兩者都仍然需要 functional interface 的 target type。
+
+```java
+Function<String, String> normalize = String::toLowerCase;
+Consumer<String> print = System.out::println;
 ```
 
 Lambda 應該保持短小、沒有令人意外的副作用。若邏輯超過幾行或需要命名，請改成 method 或 class；這對 event handler 與 Minecraft tick callback 尤其重要。
