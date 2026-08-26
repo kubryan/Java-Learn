@@ -31,7 +31,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { BackupCenter } from "@/components/BackupCenter";
 import { KnowledgeGraph } from "@/components/KnowledgeGraph";
 import { GitWorkspace } from "@/components/GitWorkspace";
-import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { MarkdownEditor, SAVE_CURRENT_NOTE_EVENT } from "@/components/MarkdownEditor";
 import { RevisionWorkspace } from "@/components/RevisionWorkspace";
 import { WikiMarkdown } from "@/components/WikiMarkdown";
 import { guideForCategory } from "@/lib/bilingual";
@@ -328,7 +328,7 @@ export default function Home() {
         setCommandPaletteOpen(true);
         return;
       }
-      if (modifier && key === "k" && !event.shiftKey) {
+      if (modifier && key === "k" && !event.shiftKey && !isTextEntry) {
         event.preventDefault();
         openQuickSearch();
         return;
@@ -338,6 +338,11 @@ export default function Home() {
         setNewNoteRequest((value) => value + 1);
         return;
       }
+      if (modifier && key === "s" && !event.shiftKey && editorOpen && !isTextEntry) {
+        event.preventDefault();
+        window.dispatchEvent(new Event(SAVE_CURRENT_NOTE_EVENT));
+        return;
+      }
       if (modifier && key === "p" && !event.shiftKey && !isTextEntry) {
         event.preventDefault();
         setPreviewOpen(true);
@@ -345,7 +350,7 @@ export default function Home() {
     };
     window.addEventListener("keydown", onShortcut);
     return () => window.removeEventListener("keydown", onShortcut);
-  }, []);
+  }, [editorOpen]);
 
   useEffect(() => {
     if (!knowledgeOpen || !indexReady) return;

@@ -46,7 +46,10 @@ export function CommandPalette({
               <CommandItem
                 key={action.id}
                 value={[action.label, action.description, ...(action.keywords ?? [])].join(" ")}
-                onSelect={action.onSelect}
+                onSelect={() => {
+                  action.onSelect();
+                  onOpenChange(false);
+                }}
                 className="gap-3 rounded-md px-3 py-3 text-slate-800 data-[selected=true]:bg-teal-700/[0.10] data-[selected=true]:text-teal-950"
               >
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-teal-800/15 bg-white text-teal-800">

@@ -9,6 +9,7 @@ type DiskNote = { content: string; hash: string; modifiedAt: string };
 type SavePhase = "loading" | "saved" | "editing" | "saving" | "conflict" | "error" | "unavailable";
 
 const AUTO_SAVE_DELAY = 1200;
+export const SAVE_CURRENT_NOTE_EVENT = "javabase:save-current-note";
 
 export function MarkdownEditor({ note, onOpenNote, onDirtyChange, onSaved }: { note: Note; onOpenNote: (note: Note) => void; onDirtyChange?: (dirty: boolean) => void; onSaved?: () => void }) {
   const [draft, setDraft] = useState("");
@@ -81,6 +82,12 @@ export function MarkdownEditor({ note, onOpenNote, onDirtyChange, onSaved }: { n
       }
     }
   }, [note, onSaved, relativePath]);
+
+  useEffect(() => {
+    const handleSaveRequest = () => { void saveNow("manual"); };
+    window.addEventListener(SAVE_CURRENT_NOTE_EVENT, handleSaveRequest);
+    return () => window.removeEventListener(SAVE_CURRENT_NOTE_EVENT, handleSaveRequest);
+  }, [saveNow]);
 
   useEffect(() => {
     if (!loadedRef.current || !hash || draft === savedContentRef.current || phase === "saving" || phase === "conflict" || phase === "error") return;
