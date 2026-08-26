@@ -76,7 +76,7 @@ summary: 將物品註冊為可被遊戲辨識的資源。
 
 頁首的「知識圖」會讀取所有 Markdown 中可解析的 `[[...]]`，自動建立節點與連線，不需另外寫圖譜設定。圖中可拖曳節點、拖曳空白處平移、以滑鼠滾輪或 `＋／－` 縮放，並點選節點回到原始筆記。若某篇筆記尚未出現在圖上，請先讓它連到另一篇存在的筆記，或讓其他筆記以 `[[它的標題]]` 指向它。
 
-> 「新增知識」知識總覽功能仍是瀏覽器 IndexedDB 的個人摘要；需要長期保存、全文搜尋或 Git 版控的內容，請用知識樹建立 `.md`，或在文章中使用「編輯實體 Markdown」。
+> 「新增知識」現在會直接建立 `client/src/content/knowledge/` 下的 Markdown 檔案，然後重新建立 Knowledge Index。IndexedDB 只保存搜尋索引、閱讀進度、UI 狀態與快取，不是 custom 知識的正文來源。
 
 ## 用 Git 版控實體 Markdown
 
@@ -97,11 +97,11 @@ git config user.email "你的 GitHub 提交信箱"
 
 ## 匯出／還原瀏覽器本機資料
 
-頁首的「**設定**」會開啟備份中心。選擇「下載 JSON 備份」可保存這台電腦、這個瀏覽器中的自訂知識、收藏、閱讀進度、最近使用、Markdown 草稿與修改歷史。請把下載的 `JavaBase-backup-*.json` 放在 OneDrive、外接硬碟或其他不會隨瀏覽器資料一同清除的位置。
+頁首的「**設定**」會開啟備份中心。選擇「下載 JSON 備份」可保存這台電腦、這個瀏覽器中的尚未遷移舊 custom、收藏、閱讀進度、最近使用、Markdown 草稿與修改歷史。已寫入 Markdown Workspace 的 custom 原稿不在 JSON 內；請把備份放在 OneDrive、外接硬碟或其他不會隨瀏覽器資料一同清除的位置。
 
 還原時先選擇一份 JSON；系統會先檢查它是否為相容的 JavaBase 備份並列出筆數，只有按下「確認還原」才會替換瀏覽器資料。還原前會自動下載**目前資料的安全快照**，但它不會修改 `client/src/content/` 下的任何實體 Markdown。
 
-若你希望「新增知識」的 IndexedDB 內容也變成可編輯、可搜尋、可 Git 版控的檔案，選擇「匯出為 Markdown」。只在本機開發伺服器有效，會將資料依判斷分類寫入 `client/src/content/knowledge/Java`、`Minecraft`、`AI`、`Python` 或「其他」。同名檔案會保留原檔、不覆寫，且原來的 IndexedDB 知識會保留作為安全副本；匯出後再透過 Git 工作台查看並提交新的 `.md` 檔案。
+在本機 `http://localhost:3000` 使用「新增一則本地 Markdown」時，內容會直接寫入 `client/src/content/knowledge/`，檔案建立後頁面會重新載入並從 Markdown 重建 Knowledge Index。若瀏覽器中還留有舊版 IndexedDB custom，首次載入會嘗試自動遷移；成功後會刪除舊正文記錄，失敗時則保留並顯示警告。公開部署版不能直接寫入你的電腦硬碟。
 
 ## 實體 Markdown 自動保存
 

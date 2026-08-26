@@ -42,6 +42,7 @@ export const javaBaseTree: KnowledgeFolder = {
         { id: "minecraft-nms", label: "NMS", tags: ["NMS"] },
       ],
     },
+    { id: "custom-workspace", label: "自訂 Markdown", categories: ["自訂"], directory: "knowledge" },
     {
       id: "ai",
       label: "AI",

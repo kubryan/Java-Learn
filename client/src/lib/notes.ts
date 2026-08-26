@@ -5,6 +5,9 @@ import { bilingualSearchTerms } from "./bilingual";
 
 export type Note = {
   title: string;
+  titleEn?: string;
+  topic?: string;
+  terms?: string[];
   slug: string;
   aliases: string[];
   category: string;
@@ -26,6 +29,7 @@ export const categories = [
   "Minecraft 共通",
   "Fabric",
   "NeoForge",
+  "自訂",
 ] as const;
 
 const noteModules = import.meta.glob("../content/**/*.md", {
@@ -40,6 +44,7 @@ function categoryTags(category: string) {
   if (category === "Fabric") return ["Minecraft", "Fabric"];
   if (category === "NeoForge") return ["Minecraft", "NeoForge"];
   if (category === "Minecraft 共通") return ["Minecraft"];
+  if (category === "自訂") return ["本地 Markdown", "custom knowledge"];
   return [];
 }
 
@@ -76,6 +81,9 @@ export const notes: Note[] = Object.entries(noteModules)
     const aliases = (metadata.aliases ?? "").split(",").map((alias) => alias.trim()).filter(Boolean);
     return {
       title: metadata.title ?? fallbackSlug,
+      titleEn: metadata.titleEn ?? "",
+      topic: metadata.topic ?? "",
+      terms: (metadata.terms ?? "").split(",").map((term) => term.trim()).filter(Boolean),
       slug: metadata.slug ?? fallbackSlug,
       aliases,
       category,

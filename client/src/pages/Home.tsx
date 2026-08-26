@@ -59,13 +59,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createLocalBackup, downloadBackup } from "@/lib/local-backup";
+import { createLocalBackup, createMarkdownKnowledgeFile, downloadBackup, isLocalWorkspaceAvailable, migrateLegacyCustomKnowledgeToMarkdown } from "@/lib/local-backup";
 import { toast } from "sonner";
 import {
-  addCustomKnowledge,
   createKnowledgeSnippet,
   getKnowledgeTags,
-  getKnowledgeStats,
   highlightKnowledgeText,
   searchKnowledge,
   syncKnowledgeIndex,
@@ -265,19 +263,27 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    syncKnowledgeIndex(notes)
-      .then(async (stats) => {
+    (async () => {
+      if (isLocalWorkspaceAvailable()) {
+        const migration = await migrateLegacyCustomKnowledgeToMarkdown();
         if (!active) return;
-        const tags = await getKnowledgeTags();
-        if (!active) return;
-        setKnowledgeStats(stats);
-        setKnowledgeTags(tags);
-        setIndexReady(true);
-      })
-      .catch(() => {
-        if (!active) return;
-        setIndexReady(false);
-      });
+        if (migration.migrated > 0) {
+          toast.success(`已將 ${migration.migrated} 筆舊自訂知識寫入 Markdown Workspace，正在重新建立索引。`);
+          window.setTimeout(() => window.location.reload(), 350);
+          return;
+        }
+        if (migration.remaining > 0) toast.error(`仍有 ${migration.remaining} 筆舊自訂知識未能寫入 Markdown；原資料仍保留。`);
+      }
+      const stats = await syncKnowledgeIndex(notes);
+      if (!active) return;
+      const tags = await getKnowledgeTags();
+      if (!active) return;
+      setKnowledgeStats(stats);
+      setKnowledgeTags(tags);
+      setIndexReady(true);
+    })().catch(() => {
+      if (active) setIndexReady(false);
+    });
     return () => { active = false; };
   }, []);
 
@@ -488,7 +494,7 @@ export default function Home() {
 
     try {
       setIsSavingKnowledge(true);
-      const record = await addCustomKnowledge({
+      const created = await createMarkdownKnowledgeFile({
         title: customKnowledge.title,
         titleEn: customKnowledge.titleEn,
         category: customKnowledge.category,
@@ -496,13 +502,10 @@ export default function Home() {
         tags: splitKnowledgeValues(customKnowledge.tags),
         content: customKnowledge.content,
       });
-      const [stats, results, tags] = await Promise.all([getKnowledgeStats(), searchKnowledge(""), getKnowledgeTags()]);
-      setKnowledgeStats(stats);
-      setOverviewResults(results);
-      setKnowledgeTags(tags);
       setCustomKnowledge(emptyCustomKnowledge);
-      setSavedMessage(`「${record.title}」已保存到這台瀏覽器的知識庫。`);
+      setSavedMessage(`「${created.title}」已寫入 ${created.path}，正在重新建立 Knowledge Index。`);
       setKnowledgeView("overview");
+      window.setTimeout(() => window.location.reload(), 450);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "無法保存知識，請再試一次。");
     } finally {
@@ -599,7 +602,7 @@ export default function Home() {
 
       <RevisionWorkspace note={selectedNote} open={historyOpen} onOpenChange={setHistoryOpen} />
 
-      <Dialog open={editorOpen} onOpenChange={(next) => { if (!next && editorDirty) { setEditorCloseConfirm(true); return; } setEditorOpen(next); if (!next && editorHasSaved) window.setTimeout(() => location.reload(), 140); }}><DialogContent className="markdown-editor-dialog max-h-[calc(100vh-2rem)] sm:max-w-7xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0"><DialogHeader className="markdown-editor-dialog-header border-b border-slate-950/10 px-6 pb-4 pt-6"><DialogTitle className="font-serif text-2xl font-bold">Markdown 編輯工作台 · 實體檔案模式</DialogTitle><DialogDescription>停止輸入約 1.2 秒後會安全自動保存；Ctrl+S 可立即保存。每次寫入都會比對磁碟版本、建立備份，關閉工作台後才重新載入全域索引。</DialogDescription></DialogHeader><div className="p-4"><MarkdownEditor note={selectedNote} onDirtyChange={setEditorDirty} onSaved={() => setEditorHasSaved(true)} onOpenNote={(note) => { setEditorOpen(false); openWikiNote(note); }} /></div></DialogContent></Dialog>
+      <Dialog open={editorOpen} onOpenChange={(next) => { if (!next && editorDirty) { setEditorCloseConfirm(true); return; } setEditorOpen(next); if (!next && editorHasSaved) window.setTimeout(() => location.reload(), 140); }}><DialogContent className="markdown-editor-dialog max-h-[calc(100vh-2rem)] sm:max-w-7xl overflow-y-auto border-slate-950/20 bg-[#f8f4e9] p-0"><DialogHeader className="markdown-editor-dialog-header border-b border-slate-950/10 px-6 pb-4 pt-6"><DialogTitle className="font-serif text-2xl font-bold">Markdown 編輯工作台 · 實體檔案模式</DialogTitle><DialogDescription>停止輸入約 1.2 秒後會安全保存至實體 Markdown；Ctrl+S 可立即保存。每次寫入都會比對磁碟版本、建立備份，關閉工作台後才重新載入全域 Knowledge Index。</DialogDescription></DialogHeader><div className="p-4"><MarkdownEditor note={selectedNote} onDirtyChange={setEditorDirty} onSaved={() => setEditorHasSaved(true)} onOpenNote={(note) => { setEditorOpen(false); openWikiNote(note); }} /></div></DialogContent></Dialog>
       <AlertDialog open={editorCloseConfirm} onOpenChange={setEditorCloseConfirm}><AlertDialogContent className="border-slate-950/20 bg-[#fffdf7] text-slate-950"><AlertDialogHeader><AlertDialogTitle>尚有尚未保存的 Markdown 內容</AlertDialogTitle><AlertDialogDescription>再等候約 1.2 秒可讓自動保存完成，或按下「放棄未保存內容」關閉工作台。這不會刪除先前已寫入實體檔的版本。</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>繼續編輯</AlertDialogCancel><AlertDialogAction onClick={() => { setEditorCloseConfirm(false); setEditorDirty(false); setEditorOpen(false); if (editorHasSaved) window.setTimeout(() => location.reload(), 140); }} className="bg-amber-700 text-white hover:bg-amber-800">放棄未保存內容</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 
       <Dialog open={quickSearchOpen} onOpenChange={setQuickSearchOpen}>
@@ -631,7 +634,7 @@ export default function Home() {
           <DialogHeader className="border-b border-slate-950/10 bg-[#fffdf7]/80 px-6 pb-5 pt-6 sm:px-8">
             <div className="flex items-center justify-between gap-3 text-teal-800"><span className="inline-flex items-center gap-2"><Database className="h-4 w-4" /><p className="section-label text-teal-800">LOCAL KNOWLEDGE ARCHIVE</p></span><button type="button" onClick={() => { setSavedMessage(""); setFormError(""); setKnowledgeView("create"); }} className="inline-flex items-center gap-1.5 rounded-md border border-teal-800/20 bg-white px-2.5 py-1.5 text-xs font-bold text-teal-800 transition hover:border-teal-700 hover:bg-teal-700 hover:text-white"><Plus className="h-3.5 w-3.5" />新增知識</button></div>
             <DialogTitle className="font-serif text-2xl font-bold tracking-tight">學習基地已保存的知識</DialogTitle>
-            <DialogDescription className="max-w-2xl leading-6 text-slate-600">這裡列出目前儲存在此瀏覽器本地索引中的 Markdown 筆記與中英文術語。點選任一項目，就能回到相對應的學習內容或搜尋結果。</DialogDescription>
+            <DialogDescription className="max-w-2xl leading-6 text-slate-600">這裡列出由實體 Markdown 建立的 Knowledge Index、雙語術語，以及本機 Workspace 的自訂 Markdown。原稿保存在 `client/src/content/`，IndexedDB 只負責搜尋與狀態。</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-3 border-b border-slate-950/10 bg-teal-700/[0.045] px-6 py-4 sm:grid-cols-4 sm:px-8">
@@ -681,9 +684,9 @@ export default function Home() {
           ) : knowledgeView === "create" ? (
             <form onSubmit={saveCustomKnowledge}>
               <DialogHeader className="border-b border-slate-950/10 bg-[#fffdf7]/80 px-6 pb-5 pt-6 sm:px-8">
-                <div className="flex items-center gap-2 text-teal-800"><Plus className="h-4 w-4" /><p className="section-label text-teal-800">CREATE LOCAL KNOWLEDGE</p></div>
-                <DialogTitle className="font-serif text-2xl font-bold tracking-tight">新增一則本地知識</DialogTitle>
-                <DialogDescription className="max-w-2xl leading-6 text-slate-600">填寫後會保存到目前瀏覽器的 IndexedDB，立即加入學習基地總覽與中英文搜尋；不會覆蓋 Markdown 原稿。</DialogDescription>
+                <div className="flex items-center gap-2 text-teal-800"><Plus className="h-4 w-4" /><p className="section-label text-teal-800">CREATE LOCAL MARKDOWN</p></div>
+                <DialogTitle className="font-serif text-2xl font-bold tracking-tight">新增一則本地 Markdown</DialogTitle>
+                <DialogDescription className="max-w-2xl leading-6 text-slate-600">填寫後會寫入 `client/src/content/knowledge/` 實體 Markdown，接著重新建立 Knowledge Index；IndexedDB 只保存可搜尋的索引，不保存這篇原稿。</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 px-6 py-6 sm:grid-cols-2 sm:px-8">
                 <label className="space-y-1.5"><span className="text-sm font-semibold">知識標題 <span className="text-teal-800">Title</span></span><Input value={customKnowledge.title} onChange={(event) => setCustomKnowledge((current) => ({ ...current, title: event.target.value }))} placeholder="例如：Java 例外處理" required /></label>
@@ -694,7 +697,7 @@ export default function Home() {
                 <label className="space-y-1.5 sm:col-span-2"><span className="text-sm font-semibold">知識內容 <span className="text-teal-800">Knowledge note</span></span><Textarea value={customKnowledge.content} onChange={(event) => setCustomKnowledge((current) => ({ ...current, content: event.target.value }))} className="min-h-44 resize-y bg-white" placeholder="用自己的話寫下定義、範例、易錯點或待查問題…" required /></label>
                 {formError && <p role="alert" className="sm:col-span-2 rounded-md border border-red-700/20 bg-red-50 px-3 py-2 text-sm text-red-800">{formError}</p>}
               </div>
-              <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-4 sm:px-8"><button type="button" onClick={() => setKnowledgeView("overview")} className="rounded-md border border-slate-950/15 bg-white px-3 py-2 text-sm font-semibold transition hover:bg-slate-950 hover:text-white">返回總覽</button><button type="submit" disabled={isSavingKnowledge} className="rounded-md bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-60">{isSavingKnowledge ? "保存中…" : "保存到知識庫"}</button></DialogFooter>
+              <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-4 sm:px-8"><button type="button" onClick={() => setKnowledgeView("overview")} className="rounded-md border border-slate-950/15 bg-white px-3 py-2 text-sm font-semibold transition hover:bg-slate-950 hover:text-white">返回總覽</button><button type="submit" disabled={isSavingKnowledge} className="rounded-md bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-60">{isSavingKnowledge ? "寫入 Markdown 中…" : "寫入 Markdown Workspace"}</button></DialogFooter>
             </form>
           ) : selectedCustomKnowledge ? (
             <>
@@ -733,7 +736,7 @@ export default function Home() {
           </div>
           <div className="mb-4 flex items-center gap-2 px-1 text-[10px] font-mono text-teal-800">
             <Database className="h-3.5 w-3.5" />
-            <span>{indexReady ? `LOCAL INDEX · ${knowledgeStats.notes} NOTES · ${knowledgeStats.terms} TERMS` : "LOCAL INDEX · 建立中"}</span>
+            <span>{indexReady ? `LOCAL INDEX · ${knowledgeStats.notes} NOTES · ${knowledgeStats.custom} CUSTOM · ${knowledgeStats.terms} TERMS` : "LOCAL INDEX · 建立中"}</span>
           </div>
           <section className="mb-4 rounded-md border border-teal-800/15 bg-teal-700/[0.045] p-2">
             <button type="button" onClick={() => setTagOpen((open) => !open)} className="flex w-full items-center gap-2 px-1 py-1 text-left"><Tags className="h-3.5 w-3.5 text-teal-800" /><span className="section-label text-teal-800">EXPLORE TAGS</span><span className="ml-auto font-mono text-[10px] text-teal-800">{knowledgeTags.length}</span></button>

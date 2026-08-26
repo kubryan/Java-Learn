@@ -27,6 +27,32 @@ describe("knowledge-db pure helpers", () => {
     expect(records.length).toBeGreaterThan(1);
   });
 
+  it("treats custom Markdown notes as Markdown-backed custom records", () => {
+    const records = buildKnowledgeRecords([
+      {
+        title: "本地例外處理",
+        titleEn: "exception handling",
+        topic: "Java 基礎",
+        terms: ["try", "catch"],
+        slug: "custom-exception-handling",
+        aliases: [],
+        category: "自訂",
+        order: 90,
+        level: "自訂",
+        tags: ["本機自建知識"],
+        summary: "本地 Markdown Workspace 筆記。",
+        body: "用 try/catch 處理例外。",
+        path: "content/knowledge/本地例外處理.md",
+      },
+    ]);
+    expect(records[0]).toMatchObject({
+      kind: "custom",
+      origin: "markdown",
+      titleEn: "exception handling",
+      path: "content/knowledge/本地例外處理.md",
+    });
+  });
+
   it("highlights query tokens without losing surrounding text", () => {
     const parts = highlightKnowledgeText("Java variable method", "variable");
     const match = parts.find((part) => part.isMatch);

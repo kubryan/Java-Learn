@@ -1,11 +1,15 @@
 /** Design reminder — 藍圖工作桌：備份必須是可驗證、可攜與可回復的安全副本；實體 Markdown 匯出只可走 localhost 檔案服務。 */
-import { getCustomKnowledgeRecords, replaceCustomKnowledgeRecords, type KnowledgeRecord } from "./knowledge-db";
+import { getLegacyCustomKnowledgeRecords, removeCustomKnowledgeRecords, replaceCustomKnowledgeRecords, type CustomKnowledgeInput, type KnowledgeRecord } from "./knowledge-db";
 import { getAllNoteRevisions, replaceAllNoteRevisions, type NoteRevision } from "./note-history";
 
 export const BACKUP_FORMAT = "javabase-local-backup";
 export const BACKUP_VERSION = 1;
 
 const STORAGE_KEYS = ["java-learning-completed", "java-learning-favorites", "java-learning-recent-reads", "theme"];
+
+export function isLocalWorkspaceAvailable() {
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
 
 export type JavaBaseBackup = {
   format: typeof BACKUP_FORMAT;
@@ -17,7 +21,7 @@ export type JavaBaseBackup = {
 };
 
 export type BackupSummary = { customKnowledge: number; noteRevisions: number; localStorageEntries: number; draftEntries: number; exportedAt: string };
-export type MarkdownExportResult = { written: string[]; conflicts: string[]; failures: string[] };
+export type MarkdownExportResult = { written: string[]; conflicts: string[]; failures: string[]; writtenIds: string[] };
 
 function storageSnapshot() {
   const snapshot: Record<string, string> = {};
@@ -31,7 +35,7 @@ export function summarizeBackup(backup: JavaBaseBackup): BackupSummary {
 }
 
 export async function createLocalBackup(): Promise<JavaBaseBackup> {
-  const [customKnowledge, noteRevisions] = await Promise.all([getCustomKnowledgeRecords(), getAllNoteRevisions()]);
+  const [customKnowledge, noteRevisions] = await Promise.all([getLegacyCustomKnowledgeRecords(), getAllNoteRevisions()]);
   return { format: BACKUP_FORMAT, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), localStorage: storageSnapshot(), customKnowledge, noteRevisions };
 }
 
@@ -96,15 +100,51 @@ async function ensureFolder(directory: string) {
   try { await localRequest("create", { path: directory, kind: "folder" }); } catch (error) { if (!(error instanceof Error) || !error.message.includes("已存在")) throw error; }
 }
 
+function markdownSummary(value: string) {
+  return value.replace(/```[\s\S]*?```/g, "").replace(/[#>*_`|\[\]()]/g, " ").replace(/\s+/g, " ").trim().slice(0, 168) || "本地 Markdown Workspace 筆記。";
+}
+
+function markdownFromInput(input: CustomKnowledgeInput, slug: string) {
+  const title = input.title.trim();
+  const titleEn = input.titleEn?.trim() ?? "";
+  const content = input.content.trim();
+  const tags = Array.from(new Set(["本機自建知識", "custom knowledge", input.category.trim(), ...input.tags.map((tag) => tag.trim())].filter(Boolean)));
+  const terms = Array.from(new Set([title, titleEn, ...input.terms.map((term) => term.trim())].filter(Boolean)));
+  const frontmatter = ["---", `title: ${title.replace(/\r?\n/g, " ")}`, titleEn ? `titleEn: ${titleEn.replace(/\r?\n/g, " ")}` : "", `slug: ${slug}`, "category: 自訂", `topic: ${input.category.trim() || "開始使用"}`, "tags:", ...tags.map((tag) => `  - ${tag.replace(/\r?\n/g, " ")}`), "terms:", ...terms.map((term) => `  - ${term.replace(/\r?\n/g, " ")}`), `summary: ${markdownSummary(content)}`, "level: 自訂", "order: 90", "source: Markdown Workspace", `createdAt: ${new Date().toISOString()}`, "---"].filter(Boolean);
+  return `${frontmatter.join("\n")}\n\n# ${title}\n\n${content}\n`;
+}
+
+export async function createMarkdownKnowledgeFile(input: CustomKnowledgeInput) {
+  if (!isLocalWorkspaceAvailable()) throw new Error("本機 Markdown Workspace 只在 localhost 開發伺服器可用；公開網站不能寫入你的電腦硬碟。");
+  const title = input.title.trim();
+  const content = input.content.trim();
+  if (!title || !content) throw new Error("請填寫知識標題與內容。");
+  const suffix = Date.now().toString(36);
+  const slug = `custom-${suffix}-${safeFileSegment(title).toLocaleLowerCase()}`;
+  const filename = `${safeFileSegment(title)}--${suffix}.md`;
+  await ensureFolder("knowledge");
+  await localRequest("import", { directory: "knowledge", filename, content: markdownFromInput(input, slug) });
+  return { path: `content/knowledge/${filename}`, slug, title };
+}
+
 export async function exportCustomKnowledgeToMarkdown(records: KnowledgeRecord[]): Promise<MarkdownExportResult> {
-  const result: MarkdownExportResult = { written: [], conflicts: [], failures: [] };
+  const result: MarkdownExportResult = { written: [], conflicts: [], failures: [], writtenIds: [] };
   const folders = Array.from(new Set(records.map(exportDirectory)));
   try { await ensureFolder("knowledge"); await Promise.all(folders.map(ensureFolder)); } catch (error) { throw new Error(error instanceof Error ? error.message : "無法建立 Markdown 匯出資料夾。 "); }
   for (const record of records) {
     const directory = exportDirectory(record);
     const filename = `${safeFileSegment(record.title)}--${safeFileSegment(record.id.replace(/^custom:/, ""))}.md`;
-    try { await localRequest("import", { directory, filename, content: markdownFromRecord(record) }); result.written.push(`${directory}/${filename}`); }
+    try { await localRequest("import", { directory, filename, content: markdownFromRecord(record) }); result.written.push(`${directory}/${filename}`); result.writtenIds.push(record.id); }
     catch (error) { const message = error instanceof Error ? error.message : "未知匯出失敗"; if (message.includes("同名檔案")) result.conflicts.push(`${directory}/${filename}`); else result.failures.push(`${directory}/${filename}：${message}`); }
   }
   return result;
+}
+
+export async function migrateLegacyCustomKnowledgeToMarkdown() {
+  if (!isLocalWorkspaceAvailable()) return { migrated: 0, remaining: 0, failures: [] as string[] };
+  const legacy = await getLegacyCustomKnowledgeRecords();
+  if (!legacy.length) return { migrated: 0, remaining: 0, failures: [] as string[] };
+  const result = await exportCustomKnowledgeToMarkdown(legacy);
+  if (result.writtenIds.length) await removeCustomKnowledgeRecords(result.writtenIds);
+  return { migrated: result.writtenIds.length, remaining: legacy.length - result.writtenIds.length, failures: result.failures };
 }

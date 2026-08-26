@@ -171,15 +171,16 @@ function transactionDone(transaction: IDBTransaction) {
 
 export function buildKnowledgeRecords(notes: Note[]): KnowledgeRecord[] {
   const noteRecords = notes.map<KnowledgeRecord>((note) => {
-    const guide = guideForCategory(note.category);
-    const terms = guide.terms.flatMap((term) => [term.zh, term.en]);
+    const isCustom = note.category === "自訂";
+    const guide = guideForCategory(note.topic || note.category);
+    const terms = Array.from(new Set([...(note.terms ?? []), ...guide.terms.flatMap((term) => [term.zh, term.en])]));
     return {
       id: `note:${note.slug}`,
-      kind: "note",
+      kind: isCustom ? "custom" : "note",
       title: note.title,
-      titleEn: note.category,
+      titleEn: note.titleEn || (isCustom ? note.topic || "" : note.category),
       category: note.category,
-      tags: note.tags,
+      tags: Array.from(new Set([...note.tags, ...(isCustom && note.topic ? [note.topic] : [])])),
       terms,
       content: note.body,
       preview: note.summary,
@@ -226,7 +227,7 @@ export async function syncKnowledgeIndex(notes: Note[]): Promise<KnowledgeStats>
   const records = buildKnowledgeRecords(notes);
   const signature = createHash(records.map((record) => `${record.id}|${record.title}|${record.titleEn}|${record.category}|${record.tags.join(",")}|${record.content}|${record.terms.join(",")}`).join("\n"));
   const database = await openDatabase();
-  const customRecords = (await readAllRecords()).filter((record) => record.kind === "custom");
+  const customRecords = (await readAllRecords()).filter((record) => record.kind === "custom" && record.origin === "local");
   const readTransaction = database.transaction(META_STORE, "readonly");
   const sourceMeta = await requestValue<{ key: string; value: string } | undefined>(readTransaction.objectStore(META_STORE).get("source-signature"));
 
@@ -264,41 +265,22 @@ export async function getKnowledgeTags(): Promise<KnowledgeTag[]> {
   return Array.from(tags.values()).sort((left, right) => right.count - left.count || left.name.localeCompare(right.name, "zh-Hant"));
 }
 
-export async function addCustomKnowledge(input: CustomKnowledgeInput): Promise<KnowledgeRecord> {
-  const title = input.title.trim();
-  const content = input.content.trim();
-  if (!title || !content) {
-    throw new Error("請填寫知識標題與內容。");
-  }
-
-  const titleEn = input.titleEn?.trim() ?? "";
-  const uniqueTerms = Array.from(new Set([title, titleEn, ...input.terms.map((term) => term.trim())].filter(Boolean)));
-  const uniqueTags = Array.from(new Set(["本地自建知識", "custom knowledge", ...input.tags.map((tag) => tag.trim())].filter(Boolean)));
-  const createdAt = new Date().toISOString();
-  const record: KnowledgeRecord = {
-    id: `custom:${Date.now().toString(36)}-${createHash(`${title}|${content}|${createdAt}`)}`,
-    kind: "custom",
-    title,
-    titleEn,
-    category: input.category,
-    tags: uniqueTags,
-    terms: uniqueTerms,
-    content,
-    preview: markdownPreview(content),
-    path: "local://custom-knowledge",
-    origin: "local",
-    createdAt,
-  };
-
-  const database = await openDatabase();
-  const transaction = database.transaction(RECORDS_STORE, "readwrite");
-  transaction.objectStore(RECORDS_STORE).put(record);
-  await transactionDone(transaction);
-  return record;
+export async function getCustomKnowledgeRecords() {
+  return (await readAllRecords()).filter((record) => record.kind === "custom");
 }
 
-export async function getCustomKnowledgeRecords() {
+export async function getLegacyCustomKnowledgeRecords() {
   return (await readAllRecords()).filter((record) => record.kind === "custom" && record.origin === "local");
+}
+
+export async function removeCustomKnowledgeRecords(ids: string[]) {
+  if (!ids.length) return 0;
+  const database = await openDatabase();
+  const transaction = database.transaction(RECORDS_STORE, "readwrite");
+  const store = transaction.objectStore(RECORDS_STORE);
+  ids.forEach((id) => store.delete(id));
+  await transactionDone(transaction);
+  return ids.length;
 }
 
 export async function replaceCustomKnowledgeRecords(records: KnowledgeRecord[]) {
