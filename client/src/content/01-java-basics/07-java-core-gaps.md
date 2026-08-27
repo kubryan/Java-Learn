@@ -120,7 +120,7 @@ public final class CalibrationConfig {
 }
 ```
 
-final reference 不能改指向另一個物件，但物件本身不一定不可變。`final List<String> names` 仍可能 `add`；若需要不可變集合，請選擇適合的 immutable API 或建立 defensive copy。Minecraft 的 registry key、mod id 與設定常數通常應該是 `static final`，避免執行期間被意外改寫。
+final reference 不能改指向另一個物件，但物件本身不一定不可變。`final List<String> names` 仍可能 `add`；若需要完整理解 final reference、immutable object、unmodifiable view、defensive copy、record shallow immutability 與 mutable key，請閱讀獨立篇 [`Immutability 與 Mutable Object`](./10-immutability.md)。若需要不可變集合，請選擇適合的 immutable API 或建立 defensive copy。Minecraft 的 registry key、mod id 與設定常數通常應該是 `static final`，避免執行期間被意外改寫。
 
 ## 綜合範例：安全計算方塊傷害
 

@@ -45,6 +45,7 @@ describe("notes", () => {
     const objectContract = searchNotes("hashCode", "OOP");
     const strings = searchNotes("StringBuilder", "Java 基礎");
     const packages = searchNotes("protected", "Java 基礎");
+    const immutability = searchNotes("Defensive Copy", "Java 基礎");
     const enums = searchNotes("EnumMap", "Java 現代語法");
     const annotations = searchNotes("Retention", "Java 現代語法");
     const jvm = searchNotes("Class Loader", "JVM");
@@ -66,6 +67,7 @@ describe("notes", () => {
     expect(objectContract.some((note) => note.slug === "java-object-contract")).toBe(true);
     expect(strings.some((note) => note.slug === "java-strings")).toBe(true);
     expect(packages.some((note) => note.slug === "java-packages-access-modifiers")).toBe(true);
+    expect(immutability.some((note) => note.slug === "java-immutability")).toBe(true);
     expect(enums.some((note) => note.slug === "java-enum")).toBe(true);
     expect(annotations.some((note) => note.slug === "java-annotations")).toBe(true);
     expect(jvm.some((note) => note.slug === "java-jvm")).toBe(true);

@@ -30,6 +30,7 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 | ⬜ | `final`｜Final | ⭐⭐⭐ | `01-java-basics/07-java-core-gaps.md` |
 | ⭐ | String／StringBuilder｜字串與字串建構器獨立篇 | ⭐⭐⭐ | `01-java-basics/08-strings.md` |
 | ⭐ | Package／Import／Access Modifier｜套件、匯入與存取修飾子獨立篇 | ⭐⭐⭐ | `01-java-basics/09-packages-access-modifiers.md` |
+| ⭐ | Immutability／Mutable Object｜不可變性與可變物件獨立篇 | ⭐⭐⭐ | `01-java-basics/10-immutability.md` |
 
 ## String／StringBuilder 獨立學習入口
 
@@ -38,6 +39,10 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 ## Package／Import／Access Modifier 獨立學習入口
 
 `package`、`import`、`public`、`protected`、`private` 與 package-private 已整理到 `01-java-basics/09-packages-access-modifiers.md`。請用 exact package、fully qualified name 與 access table 判斷 class／method 為什麼可見；再把 `common`、`client`、`registry`、`entity`、`item`、`block` 與 `util` 對照到 Minecraft 專案。特別注意：subpackage 不是同一個 package，`import` 不會增加權限，而 package 名稱也不會自動建立 Fabric／NeoForge／Paper 的 side boundary。
+
+## Immutability／Mutable Object 獨立學習入口
+
+`final` reference 與 object immutable 是不同問題，已整理到 `01-java-basics/10-immutability.md`。請先掌握 `final List<String>` 為什麼仍可 `add`、`List.copyOf` 與 `Collections.unmodifiableList` 的差異，再練習 defensive copy、record shallow immutability、HashMap mutable key 與 Minecraft immutable snapshot。這篇會連結 Collections、Object Contract、Concurrency 與 Serialization，避免把 final、只讀 view、snapshot、deep immutable 與 thread-safe 混成同一個概念。
 
 ## OOP
 

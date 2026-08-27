@@ -235,6 +235,10 @@ System.out.println(count.id());
 
 Record 的 component reference 是 final，但如果 component 指向 mutable list，record 不會自動做 deep copy。需要真正不可變時，請在 compact constructor 建立 defensive copy。Record 很適合 payload DTO、設定快照與測試資料，但不一定適合需要複雜生命週期或 mutable entity state 的 class。
 
+## Immutability｜不可變性與 Mutable Object
+
+`final` reference 不能重新指向另一個 object，但不會自動讓 object immutable。這個差異、`final List<String>` 仍可 `add`、`List.copyOf`、`Collections.unmodifiableList`、defensive copy、mutable key、thread safety 與 Minecraft state snapshot 已整理成獨立 handbook：`01-java-basics/10-immutability.md`。本篇只保留判斷原則：先確認 state owner，再決定 immutable value、mutable owner、snapshot、view、lock 或 scheduler；不要把 final、只讀 collection 與 thread-safe 當成同義詞。
+
 ## Pattern Matching｜模式匹配
 
 Pattern matching 讓型別檢查與變數綁定靠近，減少重複 cast。現代 Java 也提供對 `switch` 的 pattern matching，但要依專案的 JDK 與 compiler release 確認可用版本。
