@@ -34,6 +34,7 @@ describe("notes", () => {
     const methodReferences = searchNotes("Method Reference", "Java 現代語法");
     const streams = searchNotes("flatMap", "Java 現代語法");
     const optionals = searchNotes("orElseThrow", "Java 現代語法");
+    const exceptionHierarchy = searchNotes("Throwable", "Exception");
     const io = searchNotes("BufferedReader", "Java 現代語法");
     const serialization = searchNotes("JSON", "Java 現代語法");
     const concurrency = searchNotes("ExecutorService", "Java 現代語法");
@@ -56,6 +57,7 @@ describe("notes", () => {
     expect(methodReferences.some((note) => note.slug === "modern-java")).toBe(true);
     expect(streams.some((note) => note.slug === "java-stream-api")).toBe(true);
     expect(optionals.some((note) => note.slug === "modern-java")).toBe(true);
+    expect(exceptionHierarchy.some((note) => note.slug === "java-exceptions")).toBe(true);
     expect(io.some((note) => note.slug === "java-io")).toBe(true);
     expect(serialization.some((note) => note.slug === "java-serialization")).toBe(true);
     expect(concurrency.some((note) => note.slug === "java-concurrency")).toBe(true);

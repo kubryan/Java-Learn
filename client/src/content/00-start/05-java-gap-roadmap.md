@@ -148,11 +148,15 @@ JavaBase 的本地 Markdown Workspace 正好是 I/O 的實戰場景：Markdown �
 
 | 狀態 | 主題 | Minecraft 優先級 |
 |---|---|---:|
-| ⬜ | 例外處理｜Exception Handling | ⭐⭐⭐ |
-| ⬜ | Checked Exception、Unchecked Exception | ⭐⭐ |
-| ⬜ | `try-catch`、`finally` | ⭐⭐⭐ |
-| ⬜ | `throw`、`throws` | ⭐⭐⭐ |
-| ⬜ | 自訂例外｜Custom Exception | ⭐⭐ |
+| ⭐ | 例外處理｜Exception Handling handbook | ⭐⭐⭐ |
+| ⭐ | `Throwable` → `Error`／`Exception` → `RuntimeException` | ⭐⭐⭐ |
+| ⭐ | Checked Exception、Unchecked Exception、Error | ⭐⭐⭐ |
+| ✅ | `try-catch`、`finally`、try-with-resources | ⭐⭐⭐ |
+| ✅ | `throw`、`throws` | ⭐⭐⭐ |
+| ✅ | 自訂例外｜Custom Exception | ⭐⭐ |
+| ⭐ | `catch` 邊界、`InterruptedException`、cause／suppressed exception | ⭐⭐⭐ |
+
+Exception hierarchy、`Throwable`、`Error` 與「不是所有 Throwable 都應該 catch」已整理在 `06-exceptions/01-exceptions.md`。Minecraft handler 應在 command／payload／config 邊界處理真正可恢復的錯誤，保留 cause 與 interruption；不要用 `catch (Throwable)` 掩蓋 mod bug、classloading failure、`OutOfMemoryError` 或其他 JVM／lifecycle 問題。
 
 ## JVM
 

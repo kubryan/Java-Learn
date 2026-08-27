@@ -4,8 +4,8 @@ slug: java-exceptions
 category: Exception
 order: 61
 level: 中階
-tags: Exception, Exception Handling, Checked Exception, Unchecked Exception, try-catch, finally, throw, throws, Custom Exception, Minecraft Java
-aliases: 例外處理, checked exception, unchecked exception, try catch, 自訂例外
+tags: Exception, Throwable, Error, RuntimeException, Exception Hierarchy, Exception Handling, Checked Exception, Unchecked Exception, try-catch, finally, throw, throws, Custom Exception, InterruptedException, Minecraft Java
+aliases: 例外處理, Exception Hierarchy, Throwable, Error, RuntimeException, checked exception, unchecked exception, try catch, 自訂例外
 summary: 學會辨識、傳遞與處理 Java 例外，避免吞掉錯誤或讓 Minecraft server 因未驗證輸入而崩潰。 ⭐⭐⭐ Minecraft 必學
 ---
 
@@ -15,17 +15,80 @@ summary: 學會辨識、傳遞與處理 Java 例外，避免吞掉錯誤或讓 M
 
 ## Exception hierarchy
 
-`Throwable` 下面主要有 `Error` 與 `Exception`。通常應處理或傳遞 `Exception`；`Error` 多半代表 JVM 或系統層級問題，不應用普通 catch 來掩蓋。`RuntimeException` 及其子類別屬於 unchecked exceptions。
+Java 的例外階層根在 `Throwable`。Oracle API 指出，只有 `Throwable` 或其 subclass 的 object 可以由 JVM／`throw` 丟出，也只有 `Throwable` 或其 subclass 可以作為 `catch` parameter。[4]
+
+```text
+Throwable
+├── Error
+│   ├── VirtualMachineError
+│   │   ├── OutOfMemoryError
+│   │   └── StackOverflowError
+│   ├── LinkageError
+│   └── AssertionError
+└── Exception
+    ├── RuntimeException
+    │   ├── IllegalArgumentException
+    │   ├── NullPointerException
+    │   └── NumberFormatException
+    ├── IOException
+    ├── InterruptedException
+    └── 其他 checked Exception subclasses
+```
+
+| 分支 | 代表什麼 | compiler 是否要求 catch／throws？ | 一般策略 |
+|---|---|---:|---|
+| `Throwable` | 所有 error 與 exception 的共同父型別 | 不適合作為一般 API contract | 不要把它當萬用 catch |
+| `Error` | 通常不是普通 application 可以恢復的嚴重問題 | 否，屬於 unchecked | 通常讓它向上傳播，交給 process／server policy |
+| `Exception` | application 可能希望處理的 exceptional condition | 取決於是否為 RuntimeException subclass | 只在目前層真正理解如何處理時 catch |
+| `RuntimeException` | runtime evaluation、輸入／呼叫契約或程式邏輯問題 | 否，屬於 unchecked | 修正 caller、驗證輸入，或在清楚邊界轉換／記錄 |
+| `Exception` 但不是 `RuntimeException` | checked exception，例如 `IOException` | 是，必須 catch 或 throws | 呼叫端能恢復時處理，否則保留 cause 向上傳遞 |
+
+Java Language Specification 將 unchecked exception 定義為 `RuntimeException` subtree 加上 `Error` subtree；其餘 `Throwable` classes 是 checked exceptions。[3] 因此「unchecked」不是「不重要」，「checked」也不是「一定比較嚴重」；它們描述的是 compiler 的宣告規則與 class hierarchy。
 
 ```java
 try {
     int range = Integer.parseInt(input);
-    if (range < 0) throw new IllegalArgumentException("range cannot be negative");
+    if (range < 0) {
+        throw new IllegalArgumentException("range cannot be negative");
+    }
     System.out.println(range);
 } catch (NumberFormatException error) {
     System.err.println("不是有效的整數：" + input);
 }
 ```
+
+上例只處理它能理解的輸入錯誤。它沒有 catch `Throwable`，也沒有把 `Error` 當成玩家輸入問題。`NumberFormatException` 是 `IllegalArgumentException` 的 subclass，也是 `RuntimeException` 的 subclass，因此 compiler 不要求 method 寫 `throws`。
+
+### 不是所有 Throwable 都應該 catch
+
+下面兩種寫法的範圍完全不同：
+
+```java
+catch (Exception error) {
+    // 不會捕捉 Error，但仍會捕捉 RuntimeException
+}
+
+catch (Throwable error) {
+    // 會捕捉 Exception、RuntimeException 與 Error
+}
+```
+
+`catch (Exception)` 也不是自動安全，因為它仍可能吞掉 `NullPointerException`、`IllegalStateException` 或其他程式 bug。`catch (Throwable)` 更危險，因為它還會捕捉 `OutOfMemoryError`、`StackOverflowError`、`LinkageError` 與其他不應被普通 recovery code 掩蓋的問題。Oracle 將 `Error` 描述為合理 application 通常不應嘗試 catch 的嚴重問題。[2]
+
+只有非常窄的 infrastructure boundary 才可能暫時 catch `Throwable`，例如記錄 crash context 後立刻 rethrow、維護明確的 task runner policy，或實作必須保護 process 邊界的框架。即使如此，也不能把它變成「顯示成功、繼續執行」的萬用處理器：
+
+```java
+void runPluginTask(Runnable task) {
+    try {
+        task.run();
+    } catch (Throwable fatalOrFailure) {
+        logger.error("Plugin task failed; preserving failure", fatalOrFailure);
+        throw fatalOrFailure; // policy 明確：記錄後仍讓失敗可見
+    }
+}
+```
+
+多數 mod／plugin handler 應 catch 更具體的 exception，或讓它向上傳播到正確的 loader／server error boundary。不要為了讓 server log 看起來乾淨而把錯誤吃掉。
 
 ## Checked Exception 與 Unchecked Exception
 
@@ -36,6 +99,21 @@ try {
 | `Error` | 通常不應處理 | `OutOfMemoryError` | JVM／系統層級失敗 |
 
 checked 不代表一定比較嚴重，unchecked 也不代表可以忽略。設計 API 時請思考呼叫端是否能合理恢復；若不能，讓它在正確的邊界被轉換或記錄，不要只為了通過 compiler 而空 catch。
+
+## 什麼時候該 catch？
+
+catch 的判斷重點不是「這個 exception 能不能被語法捕捉」，而是**目前這一層是否知道如何處理它**。如果目前層能修正輸入、使用 fallback、重試、轉換成 domain exception、補充 context 或完成必要清理，就可以在這裡 catch；如果只能把錯誤吞掉或印一句模糊訊息，通常應讓它向上傳播。
+
+| 例外 | 常見處理邊界 | 不應做什麼 |
+|---|---|---|
+| `IOException` | 檔案／網路／resource 邊界，可使用 fallback 或轉換 | 空 catch，或假裝設定已成功載入 |
+| `IllegalArgumentException` | command／payload／config input boundary | 把 server 內部 bug 一律說成使用者輸入錯 |
+| `NullPointerException` | 通常是 bug；修正 invariant 或 caller | 廣泛 catch 後繼續執行 |
+| `InterruptedException` | task cancellation／executor boundary | 吞掉 interrupt status |
+| `Error` | process／server／framework policy boundary | 當成普通玩家輸入恢復 |
+| `Throwable` | 極窄的 framework guard；通常記錄後 rethrow | 作為所有 handler 的萬用 catch |
+
+`catch (Exception)` 會排除 `Error`，但仍會捕捉 `RuntimeException`；因此它只能在你刻意設計成「此層處理所有 ordinary application exceptions」的邊界使用。它不是比 `catch (Throwable)` 安全就代表可以隨便寫。
 
 ## `try-catch`
 
@@ -66,6 +144,50 @@ try (BufferedReader reader = Files.newBufferedReader(path)) {
 ```
 
 `finally` 即使 try 或 catch 以 `return` 結束通常仍會執行，但不要在 finally 再 `return`，那會遮蔽原本的結果或例外。Minecraft server 的資源載入、檔案與 network buffer 都要確認生命週期由哪一層負責。
+
+## `InterruptedException` 與取消
+
+`InterruptedException` 不是一般「工作失敗」訊息，而是通知目前 thread：等待、阻塞或 task 可能需要停止。若目前 method 無法合理處理取消，應宣告 `throws InterruptedException`；若必須在這一層轉換或結束 task，通常要恢復 interrupt flag，避免把取消訊號吞掉：
+
+```java
+void awaitReload(Future<?> future) {
+    try {
+        future.get();
+    } catch (InterruptedException interrupted) {
+        Thread.currentThread().interrupt(); // ✅ 保留取消訊號
+        logger.debug("Reload wait interrupted");
+    } catch (ExecutionException failure) {
+        throw new ConfigLoadException("Reload task failed", failure.getCause());
+    }
+}
+```
+
+不要只寫 `catch (InterruptedException ignored) {}`。在 Minecraft mod／plugin 中，server shutdown、reload、executor cancellation 與 worker lifecycle 都可能依賴這個訊號；恢復 flag 或依 framework contract 傳遞它，才能讓上層知道 task 沒有正常完成。
+
+## Cause 與 Suppressed Exception
+
+`Throwable` 可以保存 detail message、stack trace、cause 與 suppressed exceptions。[4] 當高層 API 要把低層 `IOException` 轉成 `ConfigLoadException` 時，保留 cause 能讓 Debugging handbook 的 stack trace 仍然追到真正來源：
+
+```java
+try {
+    return parse(Files.readString(path));
+} catch (IOException error) {
+    throw new ConfigLoadException("無法載入 calibration config：" + path, error);
+}
+```
+
+try-with-resources 發生「主要例外」和 `close()` 例外時，後者可能以 suppressed exception 保存。不要只記錄 `getMessage()` 而丟掉整個 throwable；logger 通常應收到 exception object，才能保留 cause、stack trace 與 suppressed information：
+
+```java
+try (BufferedReader reader = Files.newBufferedReader(path)) {
+    return reader.readLine();
+} catch (IOException error) {
+    logger.error("讀取設定檔失敗：{}", path, error);
+    throw error;
+}
+```
+
+`getMessage()` 只是文字摘要；`printStackTrace()`、logger exception parameter 與 `getCause()` 才能保留診斷鏈。不要用新的 exception 取代舊 exception 而不傳 cause，也不要把 token、完整玩家 payload 或敏感路徑直接放進 message。
 
 ## `throw` 與 `throws`
 
@@ -155,5 +277,7 @@ void handleCalibrate(ServerPlayer player, int requestedRange) {
 ## References
 
 [1]: https://dev.java/learn/exceptions/ "Exceptions — Dev.java"
-[2]: https://docs.oracle.com/javase/tutorial/essential/exceptions/ "Exceptions — Oracle Java Tutorials"
-[3]: https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html "Exceptions — Java Language Specification"
+[2]: https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Error.html "Error — Java SE 21 API"
+[3]: https://docs.oracle.com/javase/specs/jls/se21/html/jls-11.html "Exceptions — Java Language Specification"
+[4]: https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Throwable.html "Throwable — Java SE 21 API"
+[5]: https://docs.oracle.com/javase/tutorial/essential/exceptions/ "Exceptions — Oracle Java Tutorials"
