@@ -28,6 +28,11 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 | ⬜ | 作用域｜Scope | ⭐⭐ | `01-java-basics/07-java-core-gaps.md` |
 | ⬜ | `static`｜Static | ⭐⭐⭐ | `01-java-basics/07-java-core-gaps.md` |
 | ⬜ | `final`｜Final | ⭐⭐⭐ | `01-java-basics/07-java-core-gaps.md` |
+| ⭐ | String／StringBuilder｜字串與字串建構器獨立篇 | ⭐⭐⭐ | `01-java-basics/08-strings.md` |
+
+## String／StringBuilder 獨立學習入口
+
+`String` 與 `StringBuilder` 已獨立成 `01-java-basics/08-strings.md`。請先理解 String immutable 與 StringBuilder mutable，再練習 `equals`、`append`、`String.join`、多行文字、Minecraft log／command 與 JSON 邊界。小型固定文字組合可使用 `"A" + value`；大量動態累積才考慮 StringBuilder，但正式 JSON／NBT／payload 仍應使用 serializer／codec。
 
 ## OOP
 

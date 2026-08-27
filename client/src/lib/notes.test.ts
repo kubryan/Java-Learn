@@ -43,6 +43,7 @@ describe("notes", () => {
     const generics = searchNotes("Type Erasure", "Java 現代語法");
     const interfaces = searchNotes("Default Method", "OOP");
     const objectContract = searchNotes("hashCode", "OOP");
+    const strings = searchNotes("StringBuilder", "Java 基礎");
     const enums = searchNotes("EnumMap", "Java 現代語法");
     const annotations = searchNotes("Retention", "Java 現代語法");
     const jvm = searchNotes("Class Loader", "JVM");
@@ -62,6 +63,7 @@ describe("notes", () => {
     expect(generics.some((note) => note.slug === "java-generics")).toBe(true);
     expect(interfaces.some((note) => note.slug === "java-interface")).toBe(true);
     expect(objectContract.some((note) => note.slug === "java-object-contract")).toBe(true);
+    expect(strings.some((note) => note.slug === "java-strings")).toBe(true);
     expect(enums.some((note) => note.slug === "java-enum")).toBe(true);
     expect(annotations.some((note) => note.slug === "java-annotations")).toBe(true);
     expect(jvm.some((note) => note.slug === "java-jvm")).toBe(true);
