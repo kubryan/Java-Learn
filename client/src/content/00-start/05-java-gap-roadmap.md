@@ -29,10 +29,15 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 | ⬜ | `static`｜Static | ⭐⭐⭐ | `01-java-basics/07-java-core-gaps.md` |
 | ⬜ | `final`｜Final | ⭐⭐⭐ | `01-java-basics/07-java-core-gaps.md` |
 | ⭐ | String／StringBuilder｜字串與字串建構器獨立篇 | ⭐⭐⭐ | `01-java-basics/08-strings.md` |
+| ⭐ | Package／Import／Access Modifier｜套件、匯入與存取修飾子獨立篇 | ⭐⭐⭐ | `01-java-basics/09-packages-access-modifiers.md` |
 
 ## String／StringBuilder 獨立學習入口
 
 `String` 與 `StringBuilder` 已獨立成 `01-java-basics/08-strings.md`。請先理解 String immutable 與 StringBuilder mutable，再練習 `equals`、`append`、`String.join`、多行文字、Minecraft log／command 與 JSON 邊界。小型固定文字組合可使用 `"A" + value`；大量動態累積才考慮 StringBuilder，但正式 JSON／NBT／payload 仍應使用 serializer／codec。
+
+## Package／Import／Access Modifier 獨立學習入口
+
+`package`、`import`、`public`、`protected`、`private` 與 package-private 已整理到 `01-java-basics/09-packages-access-modifiers.md`。請用 exact package、fully qualified name 與 access table 判斷 class／method 為什麼可見；再把 `common`、`client`、`registry`、`entity`、`item`、`block` 與 `util` 對照到 Minecraft 專案。特別注意：subpackage 不是同一個 package，`import` 不會增加權限，而 package 名稱也不會自動建立 Fabric／NeoForge／Paper 的 side boundary。
 
 ## OOP
 
