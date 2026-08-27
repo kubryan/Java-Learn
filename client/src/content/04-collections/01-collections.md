@@ -11,7 +11,7 @@ summary: 從 Collection、List、Set、Map 的語意開始，學會選擇 ArrayL
 
 # Java Collections：List、Set、Map 與排序
 
-Collections Framework 是 Java 用來保存與操作一組物件的共同 API。`List` 強調順序與索引，`Set` 不允許重複元素，`Map` 將 key 對應到 value，`Queue` 與 `Deque` 則表達等待處理的資料結構。Oracle 的集合介面說明也特別提醒：`Map` 是獨立的 key-value 結構，不是 `Collection` 的子介面。[1]
+Collections Framework 是 Java 用來保存與操作一組物件的共同 API。`List` 強調順序與索引，`Set` 不允許重複元素，`Map` 將 key 對應到 value，`Queue` 與 `Deque` 則表達等待處理的資料結構。Oracle 的集合介面說明也特別提醒：`Map` 是獨立的 key-value 結構，不是 `Collection` 的子介面。[1] 如果要真正理解 `HashSet`／`HashMap` 為什麼能判斷重複與找到 key，請搭配閱讀 OOP 的獨立篇 [`Object Contract｜equals、hashCode 與 toString`](../03-oop/04-object-contract.md)。
 
 ## 先選介面，再選實作
 
@@ -56,7 +56,7 @@ for (String material : materials) {
 
 ## Set 與 HashSet ⭐⭐
 
-`Set` 以唯一性為核心。`HashSet` 依 `hashCode` 與 `equals` 判斷元素是否已存在，不承諾迭代順序。若邏輯需要穩定插入順序，請考慮 `LinkedHashSet`；若需要排序，請考慮 `TreeSet` 與明確的 comparator。
+`Set` 以唯一性為核心。`HashSet` 依 `hashCode` 與 `equals` 判斷元素是否已存在，不承諾迭代順序。若想深入理解「equals 相等 ⇒ hashCode 必須相等」、hash collision 與 mutable key，請閱讀 [`Object Contract｜equals、hashCode 與 toString`](../03-oop/04-object-contract.md)。若邏輯需要穩定插入順序，請考慮 `LinkedHashSet`；若需要排序，請考慮 `TreeSet` 與明確的 comparator。
 
 ```java
 Set<UUID> calibratedPlayers = new HashSet<>();
@@ -72,7 +72,7 @@ if (calibratedPlayers.add(playerId)) {
 
 ## Map 與 HashMap ⭐⭐⭐
 
-`Map<K,V>` 儲存 key-value mapping，同一個 key 最多對應一個 value。`HashMap` 不保證迭代順序；需要 predictable insertion order 時使用 `LinkedHashMap`，需要排序 key 時使用 `TreeMap`。
+`Map<K,V>` 儲存 key-value mapping，同一個 key 最多對應一個 value。`HashMap` 不保證迭代順序；key 的 equality／hashing 契約與 mutable key 風險請先看 [`Object Contract｜equals、hashCode 與 toString`](../03-oop/04-object-contract.md)。需要 predictable insertion order 時使用 `LinkedHashMap`，需要排序 key 時使用 `TreeMap`。
 
 ```java
 Map<String, Integer> blockCounts = new HashMap<>();

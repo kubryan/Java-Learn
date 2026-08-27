@@ -41,6 +41,7 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 | ⬜ | 抽象類別｜Abstract Class | ⭐⭐⭐ | `03-oop/02-oop-core-gaps.md` |
 | ⭐ | 介面｜Interface S 級獨立篇 | ⭐⭐⭐ | `03-oop/03-interface.md` |
 | ⬜ | 組合｜Composition | ⭐⭐ | `03-oop/02-oop-core-gaps.md` |
+| ⭐ | Object Contract｜equals、hashCode、toString 獨立篇 | ⭐⭐⭐ | `03-oop/04-object-contract.md` |
 
 ## S 級核心：Interface 獨立學習入口
 
@@ -48,14 +49,20 @@ Interface 不再只放在 OOP 缺口總覽中，而是獨立成一篇 S 級 hand
 
 Fabric callback、Paper Listener、Java `Comparator` 與許多 Minecraft registry／event contract 都會使用 interface。這篇會特別區分 Java 共通語法與 Fabric、NeoForge、Paper 各自的 API，避免把不同 loader 的註冊生命週期混為一談。
 
+## S 級核心：Object Contract 獨立學習入口
+
+`equals()`、`hashCode()` 與 `toString()` 已獨立成 `03-oop/04-object-contract.md`。請先理解 `==` 與 value equality，再掌握 equals 的 reflexive、symmetric、transitive、consistent、non-null 契約，以及「equals 相等 ⇒ hashCode 必須相等」的核心規則。
+
+這篇會接著連結 `HashSet`、`HashMap`、mutable key、record、繼承 equality 與 Minecraft 的 `UUID`、`BlockPos`、Fabric／Yarn 的 `Identifier`、NeoForge／Mojang mappings 的 `ResourceLocation` 與 registry key。它是 Collections 的必要前置，不是只為了寫漂亮的 log。
+
 ## Collections
 
 | 狀態 | 主題 | Minecraft 優先級 |
 |---|---|---:|
 | ⬜ | 集合框架｜Collections Framework | ⭐⭐⭐ |
 | ⬜ | `List`、`ArrayList` | ⭐⭐⭐ |
-| ⬜ | `Set`、`HashSet` | ⭐⭐ |
-| ⬜ | `Map`、`HashMap` | ⭐⭐⭐ |
+| ✅ | `Set`、`HashSet`（依賴 equals／hashCode） | ⭐⭐ |
+| ✅ | `Map`、`HashMap`（依賴 equals／hashCode） | ⭐⭐⭐ |
 | ⬜ | `Queue`、`Deque` | ⭐⭐ |
 | ⬜ | `Iterator` | ⭐⭐ |
 | ⬜ | `Comparable`、`Comparator` | ⭐⭐⭐ |
