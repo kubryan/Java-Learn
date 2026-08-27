@@ -3,8 +3,10 @@
  */
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 import { Minus, Move, Plus, RotateCcw } from "lucide-react";
-import type { Note } from "@/lib/notes";
+import { notes, type Note } from "@/lib/notes";
 import { buildKnowledgeGraph, createGraphLayout, type GraphPosition } from "@/lib/knowledge-graph";
+import { getFileRelations, getWorkspaceAssets, noteWorkspacePath, type FileRelation, type WorkspaceAsset } from "@/lib/workspace-assets";
+import { isLocalWorkspaceAvailable } from "@/lib/local-backup";
 
 const GRAPH_WIDTH = 940;
 const GRAPH_HEIGHT = 580;
@@ -15,6 +17,7 @@ type KnowledgeGraphProps = {
   activeSlug: string;
   visibleNoteSlugs: string[];
   onOpenNote: (note: Note) => void;
+  onOpenAsset?: (asset: WorkspaceAsset) => void;
 };
 
 type Viewport = { x: number; y: number; scale: number };
@@ -36,7 +39,29 @@ function nodeColor(category: string) {
   return { fill: "#fffdf7", stroke: "#526477", text: "#17263a" };
 }
 
-export function KnowledgeGraph({ activeSlug, visibleNoteSlugs, onOpenNote }: KnowledgeGraphProps) {
+function FileRelationSummary({ activeSlug, visibleNoteSlugs, onOpenAsset }: Pick<KnowledgeGraphProps, "activeSlug" | "visibleNoteSlugs" | "onOpenAsset">) {
+  const [relations, setRelations] = useState<FileRelation[]>([]);
+  const [assets, setAssets] = useState<WorkspaceAsset[]>([]);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (!isLocalWorkspaceAvailable()) { setReady(true); return; }
+    let active = true;
+    Promise.all([getFileRelations(), getWorkspaceAssets()]).then(([nextRelations, nextAssets]) => {
+      if (!active) return;
+      setRelations(nextRelations);
+      setAssets(nextAssets);
+    }).catch(() => undefined).finally(() => { if (active) setReady(true); });
+    return () => { active = false; };
+  }, []);
+  if (!isLocalWorkspaceAvailable()) return null;
+  const visiblePaths = new Set(notes.filter((note) => visibleNoteSlugs.length === 0 || visibleNoteSlugs.includes(note.slug)).map((note) => noteWorkspacePath(note.path)));
+  const activeNote = notes.find((note) => note.slug === activeSlug);
+  const activePath = activeNote ? noteWorkspacePath(activeNote.path) : "";
+  const rows = relations.map((relation) => ({ relation, asset: assets.find((asset) => asset.path === relation.assetPath), note: notes.find((note) => noteWorkspacePath(note.path) === relation.notePath) })).filter((item): item is { relation: FileRelation; asset: WorkspaceAsset; note: Note | undefined } => Boolean(item.asset && (visiblePaths.size === 0 || visiblePaths.has(item.relation.notePath) || item.relation.notePath === activePath))).slice(0, 24);
+  return <section className="mt-4 rounded-md border border-teal-800/15 bg-teal-700/[0.045] p-4"><div className="flex items-center justify-between gap-3"><div><p className="section-label text-teal-800">FILE RELATIONS</p><p className="mt-1 text-sm font-semibold text-slate-800">Markdown 與 Workspace Assets 的本地關係</p></div><span className="font-mono text-[10px] text-slate-500">{ready ? `${rows.length} RELATIONS` : "SCANNING…"}</span></div>{ready && rows.length > 0 ? <div className="mt-3 grid gap-2 sm:grid-cols-2">{rows.map(({ relation, asset, note }) => <button key={`${relation.notePath}→${relation.assetPath}`} type="button" onClick={() => onOpenAsset?.(asset)} className="flex min-w-0 items-center gap-2 rounded-md border border-teal-800/15 bg-white/70 px-3 py-2 text-left transition hover:border-teal-700/40 hover:bg-white"><span className="min-w-0 flex-1"><span className="block truncate font-mono text-[10px] font-bold text-teal-900">{note?.title ?? relation.notePath}</span><span className="my-1 block text-[10px] text-slate-400">↓ ATTACHED ASSET</span><span className="block truncate font-mono text-xs font-semibold text-slate-800">{asset.name}</span><span className="mt-1 block truncate text-[10px] text-slate-500">{relation.label || `${asset.kind.toUpperCase()} · ${asset.extension}`}</span></span></button>)}</div> : ready ? <p className="mt-3 text-xs leading-5 text-slate-500">目前沒有符合圖譜範圍的 File Relations。可在 Workspace Assets 選擇檔案並關聯目前 Markdown。</p> : null}</section>;
+}
+
+export function KnowledgeGraph({ activeSlug, visibleNoteSlugs, onOpenNote, onOpenAsset }: KnowledgeGraphProps) {
   const graph = useMemo(() => buildKnowledgeGraph(), []);
   const visibleSlugSet = useMemo(() => new Set(visibleNoteSlugs), [visibleNoteSlugs]);
   const neighboringSlugs = useMemo(() => {
@@ -142,7 +167,7 @@ export function KnowledgeGraph({ activeSlug, visibleNoteSlugs, onOpenNote }: Kno
   }
 
   if (graph.nodes.length === 0) {
-    return <p className="rounded-md border border-amber-700/20 bg-amber-50 px-4 py-5 text-sm leading-6 text-amber-950">目前還沒有由 `[[...]]` 建立的筆記關聯。先在 Markdown 加上一個 Wiki 連結，這裡就會出現節點與連線。</p>;
+    return <section><p className="rounded-md border border-amber-700/20 bg-amber-50 px-4 py-5 text-sm leading-6 text-amber-950">目前還沒有由 `[[...]]` 建立的筆記關聯。先在 Markdown 加上一個 Wiki 連結，這裡就會出現節點與連線。</p><FileRelationSummary activeSlug={activeSlug} visibleNoteSlugs={visibleNoteSlugs} onOpenAsset={onOpenAsset} /></section>;
   }
 
   return (
@@ -204,6 +229,7 @@ export function KnowledgeGraph({ activeSlug, visibleNoteSlugs, onOpenNote }: Kno
         <div className="graph-move-hint"><Move className="h-3.5 w-3.5" />DRAG · WHEEL TO ZOOM</div>
       </div>
       <div className="graph-footer"><span>{graphNodes.length} NODES · {graphEdges.length} LINKS</span><span>Markdown `[[...]]` · 即時關聯</span></div>
+      <FileRelationSummary activeSlug={activeSlug} visibleNoteSlugs={visibleNoteSlugs} onOpenAsset={onOpenAsset} />
       {graph.unresolvedTargets.length > 0 && <p className="mt-3 text-xs leading-5 text-amber-900">尚未找到 {graph.unresolvedTargets.length} 個目標：{graph.unresolvedTargets.slice(0, 4).join("、")}{graph.unresolvedTargets.length > 4 ? "…" : ""}</p>}
     </section>
   );

@@ -4,7 +4,14 @@
 import { bilingualGuides, guideForCategory } from "./bilingual";
 import type { Note } from "./notes";
 
-export type KnowledgeKind = "note" | "term" | "custom";
+export type KnowledgeKind = "note" | "term" | "custom" | "asset";
+
+export type TextKnowledgeSource = {
+  path: string;
+  name: string;
+  content: string;
+  modifiedAt: string | undefined;
+};
 
 export type KnowledgeRecord = {
   id: string;
@@ -17,7 +24,7 @@ export type KnowledgeRecord = {
   searchText: string;
   preview: string;
   path: string;
-  origin: "markdown" | "glossary";
+  origin: "markdown" | "glossary" | "asset";
 };
 
 export type LegacyCustomKnowledgeRecord = {
@@ -58,6 +65,7 @@ export type KnowledgeStats = {
   notes: number;
   terms: number;
   custom: number;
+  assets: number;
 };
 
 export type KnowledgeTag = {
@@ -67,6 +75,7 @@ export type KnowledgeTag = {
   notes: number;
   terms: number;
   custom: number;
+  assets: number;
 };
 
 const DB_NAME = "code-learning-knowledge";
@@ -185,7 +194,7 @@ function transactionDone(transaction: IDBTransaction) {
   });
 }
 
-export function buildKnowledgeRecords(notes: Note[]): KnowledgeRecord[] {
+export function buildKnowledgeRecords(notes: Note[], textAssets: TextKnowledgeSource[] = []): KnowledgeRecord[] {
   const noteRecords = notes.map<KnowledgeRecord>((note) => {
     const isCustom = note.category === "自訂";
     const guide = guideForCategory(note.topic || note.category);
@@ -221,7 +230,21 @@ export function buildKnowledgeRecords(notes: Note[]): KnowledgeRecord[] {
     })),
   );
 
-  return [...noteRecords, ...termRecords];
+  const textAssetRecords = textAssets.map<KnowledgeRecord>((asset) => ({
+    id: `asset:${asset.path}`,
+    kind: "asset",
+    title: asset.name,
+    titleEn: "text asset",
+    category: "Workspace Assets",
+    tags: ["Workspace Assets", "Text Asset", "可搜尋附件"],
+    terms: [asset.name, "text", "txt", "Workspace Assets"],
+    searchText: asset.content,
+    preview: markdownPreview(asset.content),
+    path: `content/${asset.path}`,
+    origin: "asset",
+  }));
+
+  return [...noteRecords, ...termRecords, ...textAssetRecords];
 }
 
 async function readAllRecords() {
@@ -236,11 +259,30 @@ function buildKnowledgeStats(records: StoredKnowledgeRecord[]): KnowledgeStats {
     notes: records.filter((record) => record.kind === "note").length,
     terms: records.filter((record) => record.kind === "term").length,
     custom: records.filter((record) => record.kind === "custom").length,
+    assets: records.filter((record) => record.kind === "asset").length,
   };
 }
 
+async function getLocalTextKnowledgeSources(): Promise<TextKnowledgeSource[]> {
+  if (typeof window === "undefined" || !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)) return [];
+  try {
+    const assetResponse = await fetch("/api/local/assets", { cache: "no-store" });
+    const assetResult = await assetResponse.json() as { ok?: boolean; assets?: { path: string; name: string; kind: string; modifiedAt?: string }[] };
+    if (!assetResponse.ok || !assetResult.ok) return [];
+    const textAssets = (assetResult.assets ?? []).filter((asset) => asset.kind === "text");
+    const sources = await Promise.all(textAssets.map(async (asset) => {
+      const response = await fetch("/api/local/asset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: asset.path }) });
+      const result = await response.json() as { ok?: boolean; content?: string };
+      return response.ok && result.ok && typeof result.content === "string" ? { path: asset.path, name: asset.name, content: result.content, modifiedAt: asset.modifiedAt } : null;
+    }));
+    return sources.filter((source): source is TextKnowledgeSource => Boolean(source));
+  } catch {
+    return [];
+  }
+}
+
 export async function syncKnowledgeIndex(notes: Note[]): Promise<KnowledgeStats> {
-  const records = buildKnowledgeRecords(notes);
+  const records = buildKnowledgeRecords(notes, await getLocalTextKnowledgeSources());
   const signature = createHash(records.map((record) => `${record.id}|${record.path}|${record.title}|${record.titleEn}|${record.category}|${record.tags.join(",")}|${record.searchText}|${record.terms.join(",")}`).join("\n"));
   const database = await openDatabase();
   const customRecords = (await readAllRecords()).filter((record) => record.kind === "custom" && record.origin === "local");
@@ -278,11 +320,12 @@ export async function getKnowledgeTags(): Promise<KnowledgeTag[]> {
     record.tags.forEach((rawTag) => {
       const normalized = normalizeTag(rawTag);
       if (!normalized) return;
-      const current = tags.get(normalized) ?? { name: rawTag.trim(), normalized, count: 0, notes: 0, terms: 0, custom: 0 };
+      const current = tags.get(normalized) ?? { name: rawTag.trim(), normalized, count: 0, notes: 0, terms: 0, custom: 0, assets: 0 };
       current.count += 1;
       if (record.kind === "note") current.notes += 1;
       if (record.kind === "term") current.terms += 1;
       if (record.kind === "custom") current.custom += 1;
+      if (record.kind === "asset") current.assets += 1;
       tags.set(normalized, current);
     });
   });
@@ -332,7 +375,7 @@ function scoreRecord(record: StoredKnowledgeRecord, query: string) {
     { label: "標籤", value: record.tags.join(" "), weight: 105 },
     { label: "雙語術語", value: record.terms.join(" "), weight: 105 },
     { label: "分類", value: record.category, weight: 80 },
-    { label: "Markdown 內容", value: searchText, weight: 52 },
+    { label: record.kind === "asset" ? "Text 內容" : "Markdown 內容", value: searchText, weight: 52 },
   ];
 
   const tokenMatches = tokens.map((token) => ({

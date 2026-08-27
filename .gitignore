@@ -114,6 +114,9 @@ client/public/__manus__/version.json
 # Manus workspace-only files and local investigation notes
 .manus-logs/
 local-backups/
+# User-local Workspace Assets and relation metadata stay on disk only
+client/src/content/assets/
+client/src/content/.javabase/
 client/public/__manus__/
 research-notes.md
 python-research-notes.md

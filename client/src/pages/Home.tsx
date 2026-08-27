@@ -18,6 +18,7 @@ import {
   Languages,
   Network,
   Plus,
+  Paperclip,
   Search,
   Server,
   Settings,
@@ -33,6 +34,7 @@ import { KnowledgeGraph } from "@/components/KnowledgeGraph";
 import { GitWorkspace } from "@/components/GitWorkspace";
 import { MarkdownEditor, SAVE_CURRENT_NOTE_EVENT } from "@/components/MarkdownEditor";
 import { RevisionWorkspace } from "@/components/RevisionWorkspace";
+import { FileRelationsPanel, WorkspaceAssets } from "@/components/WorkspaceAssets";
 import { WikiMarkdown } from "@/components/WikiMarkdown";
 import { guideForCategory } from "@/lib/bilingual";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -172,7 +174,7 @@ export default function Home() {
   const [recentReads, setRecentReads] = useState<{ slug: string; at: string }[]>([]);
   const [recentEdits, setRecentEdits] = useState<NoteRevision[]>([]);
   const [knowledgeResults, setKnowledgeResults] = useState<KnowledgeSearchResult[]>([]);
-  const [knowledgeStats, setKnowledgeStats] = useState<KnowledgeStats>({ total: 0, notes: 0, terms: 0, custom: 0 });
+  const [knowledgeStats, setKnowledgeStats] = useState<KnowledgeStats>({ total: 0, notes: 0, terms: 0, custom: 0, assets: 0 });
   const [indexReady, setIndexReady] = useState(false);
   const [searchingKnowledge, setSearchingKnowledge] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(() => ["knowledge", "create"].includes(new URLSearchParams(window.location.search).get("view") ?? ""));
@@ -192,6 +194,9 @@ export default function Home() {
   const [knowledgeTags, setKnowledgeTags] = useState<KnowledgeTag[]>([]);
   const [tagOpen, setTagOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "graph");
+  const [assetsOpen, setAssetsOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "assets");
+  const [selectedAssetPath, setSelectedAssetPath] = useState("");
+  const [assetRefreshKey, setAssetRefreshKey] = useState(0);
   const [backupOpen, setBackupOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "backup");
   const [gitOpen, setGitOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "git");
   const [historyOpen, setHistoryOpen] = useState(() => new URLSearchParams(window.location.search).get("view") === "history");
@@ -476,6 +481,11 @@ export default function Home() {
       setKnowledgeOpen(true);
       return;
     }
+    if (record.kind === "asset") {
+      setSelectedAssetPath(record.path.replace(/^content\//, ""));
+      setAssetsOpen(true);
+      return;
+    }
     if (record.kind === "note") {
       const matchedNote = notes.find((note) => `note:${note.slug}` === record.id);
       if (matchedNote) {
@@ -529,7 +539,8 @@ export default function Home() {
     { id: "create-note", label: "新增筆記", description: "在知識樹建立一個新的 Markdown 筆記", shortcut: "Ctrl N", keywords: ["new", "markdown", "note"], icon: Plus, onSelect: () => setNewNoteRequest((value) => value + 1) },
     { id: "search-knowledge", label: "搜尋知識", description: "搜尋 Markdown、術語、標籤與本地知識", shortcut: "Ctrl K", keywords: ["search", "find", "knowledge"], icon: Search, onSelect: openQuickSearch },
     { id: "preview-note", label: "預覽目前筆記", description: "以閱讀模式開啟目前 Markdown 筆記", shortcut: "Ctrl P", keywords: ["preview", "read", "markdown"], icon: FileText, onSelect: openPreview },
-    { id: "knowledge-graph", label: "開啟 Knowledge Graph", description: "查看 Markdown Wiki 連結的知識關聯圖", keywords: ["graph", "wiki", "links"], icon: Network, onSelect: () => setGraphOpen(true) },
+    { id: "knowledge-graph", label: "開啟 Knowledge Graph", description: "查看 Markdown Wiki 連結與 File Relations", keywords: ["graph", "wiki", "links", "relations"], icon: Network, onSelect: () => setGraphOpen(true) },
+    { id: "workspace-assets", label: "開啟 Workspace Assets", description: "管理 Java、JSON、圖片、PDF 與本地附件關聯", keywords: ["assets", "files", "attachments", "relations"], icon: Paperclip, onSelect: () => setAssetsOpen(true) },
     { id: "settings", label: "開啟設定與備份", description: "管理本機資料備份、還原與 Markdown 匯出", keywords: ["settings", "backup", "restore", "export"], icon: Settings, onSelect: () => setBackupOpen(true) },
     { id: "export-all", label: "匯出全部", description: "下載目前瀏覽器中的完整 JavaBase JSON 備份", keywords: ["export", "backup", "json", "download"], icon: Download, onSelect: () => void exportAllBackup() },
     { id: "git", label: "開啟 Git 工作台", description: "檢視、暫存、提交與推送 Markdown 變更", keywords: ["git", "commit", "push", "diff"], icon: GitBranch, onSelect: () => setGitOpen(true) },
@@ -561,10 +572,11 @@ export default function Home() {
               </h1>
             </div>
           </button>
-          <div className="flex shrink-0 gap-2 md:hidden"><button type="button" onClick={() => setCommandPaletteOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-teal-800/20 bg-teal-700/[0.08] text-teal-800 transition hover:border-teal-700/35 hover:bg-teal-700 hover:text-white" aria-label="開啟命令面板"><CommandIcon className="h-4 w-4" /></button><button type="button" onClick={() => setBackupOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-4 w-4" /></button><button type="button" onClick={() => setGitOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-4 w-4" /></button><button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button></div>
+          <div className="flex shrink-0 gap-2 md:hidden"><button type="button" onClick={() => setCommandPaletteOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-teal-800/20 bg-teal-700/[0.08] text-teal-800 transition hover:border-teal-700/35 hover:bg-teal-700 hover:text-white" aria-label="開啟命令面板"><CommandIcon className="h-4 w-4" /></button><button type="button" onClick={() => setAssetsOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Workspace Assets"><Paperclip className="h-4 w-4" /></button><button type="button" onClick={() => setBackupOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-4 w-4" /></button><button type="button" onClick={() => setGitOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-4 w-4" /></button><button type="button" onClick={() => setGraphOpen(true)} className="grid h-9 w-9 place-items-center rounded-md border border-slate-950/10 bg-white/65 text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-4 w-4" /></button></div>
           <div className="workbench-tools hidden items-center gap-3 text-xs text-slate-600 md:flex">
             <span className="inline-flex overflow-hidden rounded-md border border-slate-950/10 bg-white/65"><button type="button" onClick={() => setTheme?.("light")} className={`px-2 py-1.5 ${theme === "light" ? "bg-teal-700 text-white" : ""}`}>☀ Light</button><button type="button" onClick={() => setTheme?.("dark")} className={`px-2 py-1.5 ${theme === "dark" ? "bg-teal-700 text-white" : ""}`}>🌙 Dark</button><button type="button" onClick={() => setTheme?.("system")} className={`px-2 py-1.5 ${theme === "system" ? "bg-teal-700 text-white" : ""}`}>🖥 System</button></span>
             <button type="button" onClick={() => setGraphOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Wiki 知識關聯圖"><Network className="h-3.5 w-3.5" />知識圖</button>
+            <button type="button" onClick={() => setAssetsOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟 Workspace Assets"><Paperclip className="h-3.5 w-3.5" />Assets</button>
             <button type="button" onClick={() => setBackupOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟設定與備份中心"><Settings className="h-3.5 w-3.5" />設定</button>
             <button type="button" onClick={() => setGitOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-slate-950/10 bg-white/65 px-2.5 py-1.5 font-semibold text-slate-700 transition hover:border-teal-700/35 hover:text-teal-900" aria-label="開啟本機 Git 工作台"><GitBranch className="h-3.5 w-3.5" />Git</button>
             <button type="button" onClick={() => setCommandPaletteOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-teal-800/20 bg-teal-700/[0.08] px-2.5 py-1.5 font-semibold text-teal-800 transition hover:border-teal-700/35 hover:bg-teal-700 hover:text-white" aria-label="開啟命令面板"><CommandIcon className="h-3.5 w-3.5" />命令面板 <kbd className="rounded border border-current/20 bg-white/50 px-1 font-mono text-[10px]">Ctrl ⇧ P</kbd></button>
@@ -578,6 +590,7 @@ export default function Home() {
       </header>
 
       <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} actions={commandActions} />
+      <WorkspaceAssets note={selectedNote} notes={notes} open={assetsOpen} onOpenChange={setAssetsOpen} onChanged={() => { setAssetRefreshKey((key) => key + 1); void syncKnowledgeIndex(notes).then((stats) => { setKnowledgeStats(stats); setIndexReady(true); return getKnowledgeTags().then(setKnowledgeTags); }).catch(() => undefined); }} initialAssetPath={selectedAssetPath} />
       <BackupCenter note={selectedNote} open={backupOpen} onOpenChange={setBackupOpen} />
       <GitWorkspace open={gitOpen} onOpenChange={setGitOpen} />
 
@@ -602,7 +615,7 @@ export default function Home() {
             <DialogTitle className="font-serif text-2xl font-bold tracking-tight">知識關聯圖</DialogTitle>
             <DialogDescription className="max-w-3xl leading-6 text-slate-600">圖中的節點來自含有 Wiki 連結的 Markdown 筆記；連線直接由 `[[筆記名稱]]` 建立。點擊節點可開啟文章，拖曳可調整你的閱讀座標。</DialogDescription>
           </DialogHeader>
-          <div className="px-4 py-4 sm:px-6"><KnowledgeGraph activeSlug={selectedNote.slug} visibleNoteSlugs={filteredNotes.map((note) => note.slug)} onOpenNote={(note) => { setGraphOpen(false); openWikiNote(note); }} /></div>
+          <div className="px-4 py-4 sm:px-6"><KnowledgeGraph activeSlug={selectedNote.slug} visibleNoteSlugs={filteredNotes.map((note) => note.slug)} onOpenNote={(note) => { setGraphOpen(false); openWikiNote(note); }} onOpenAsset={(asset) => { setGraphOpen(false); setSelectedAssetPath(asset.path); setAssetsOpen(true); }} /></div>
           <DialogFooter className="border-t border-slate-950/10 bg-[#fffdf7]/80 px-6 py-4 sm:px-8"><span className="mr-auto font-mono text-[10px] text-slate-500">WIKI LINKS → LIVE GRAPH · DRAG / ZOOM / OPEN NOTE</span><DialogClose className="rounded-md border border-slate-950/15 bg-white px-3 py-2 text-sm font-semibold transition hover:bg-slate-950 hover:text-white">關閉圖譜</DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
@@ -623,7 +636,7 @@ export default function Home() {
           <div className="divide-y divide-slate-950/10">
             {quickSearchResults.slice(0, 12).map((result) => (
               <button key={result.record.id} type="button" onClick={() => selectQuickSearchResult(result)} className="group flex w-full items-start gap-3 px-6 py-3.5 text-left transition hover:bg-teal-700/[0.05] sm:px-8">
-                <span className="mt-0.5 rounded-sm border border-teal-800/20 bg-teal-700/[0.08] px-1.5 py-0.5 font-mono text-[10px] font-bold text-teal-800">{result.record.kind === "term" ? "TERM" : result.record.kind === "custom" ? "LOCAL" : "MD"}</span>
+                <span className="mt-0.5 rounded-sm border border-teal-800/20 bg-teal-700/[0.08] px-1.5 py-0.5 font-mono text-[10px] font-bold text-teal-800">{result.record.kind === "term" ? "TERM" : result.record.kind === "custom" ? "LOCAL" : result.record.kind === "asset" ? "ASSET" : "MD"}</span>
                 <span className="min-w-0 flex-1"><span className="font-serif text-base font-bold group-hover:text-teal-900"><HighlightedSearchText value={result.record.title} query={quickSearchQuery} /></span>{result.record.titleEn && result.record.titleEn !== result.record.title && <span className="ml-2 font-mono text-xs text-teal-800"><HighlightedSearchText value={result.record.titleEn} query={quickSearchQuery} /></span>}<span className="mt-1 block text-xs leading-5 text-slate-600"><HighlightedSearchText value={createKnowledgeSnippet(result.record, quickSearchQuery)} query={quickSearchQuery} /></span><span className="mt-2 block font-mono text-[10px] text-slate-500">{result.record.path.split("/").pop()} · 命中：{result.matchedIn.join("、")}</span></span>
                 <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-teal-800 opacity-0 transition group-hover:opacity-100" />
               </button>
@@ -644,10 +657,11 @@ export default function Home() {
             <DialogDescription className="max-w-2xl leading-6 text-slate-600">這裡列出由實體 Markdown 建立的 Knowledge Index、雙語術語，以及本機 Workspace 的自訂 Markdown。原稿保存在 `client/src/content/`，IndexedDB 只負責搜尋與狀態。</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-3 border-b border-slate-950/10 bg-teal-700/[0.045] px-6 py-4 sm:grid-cols-4 sm:px-8">
+          <div className="grid gap-3 border-b border-slate-950/10 bg-teal-700/[0.045] px-6 py-4 sm:grid-cols-2 lg:grid-cols-5 sm:px-8">
             <div className="rounded-md border border-teal-800/15 bg-white/70 p-3"><p className="section-label text-teal-800">SAVED NOTES</p><p className="mt-1 font-serif text-2xl font-bold">{knowledgeStats.notes}</p><p className="text-xs text-slate-600">可閱讀的 Markdown 筆記</p></div>
             <div className="rounded-md border border-teal-800/15 bg-white/70 p-3"><p className="section-label text-teal-800">BILINGUAL TERMS</p><p className="mt-1 font-serif text-2xl font-bold">{knowledgeStats.terms}</p><p className="text-xs text-slate-600">中英文技術術語</p></div>
             <div className="rounded-md border border-teal-800/15 bg-white/70 p-3"><p className="section-label text-teal-800">MY KNOWLEDGE</p><p className="mt-1 font-serif text-2xl font-bold">{knowledgeStats.custom}</p><p className="text-xs text-slate-600">本地自建知識</p></div>
+            <div className="rounded-md border border-teal-800/15 bg-white/70 p-3"><p className="section-label text-teal-800">TEXT ASSETS</p><p className="mt-1 font-serif text-2xl font-bold">{knowledgeStats.assets}</p><p className="text-xs text-slate-600">可搜尋 `.txt` 附件</p></div>
             <div className="rounded-md border border-teal-800/15 bg-white/70 p-3"><p className="section-label text-teal-800">CATEGORIES</p><p className="mt-1 font-serif text-2xl font-bold">{categories.length}</p><p className="text-xs text-slate-600">可分類探索的主題</p></div>
           </div>
 
@@ -743,7 +757,7 @@ export default function Home() {
           </div>
           <div className="mb-4 flex items-center gap-2 px-1 text-[10px] font-mono text-teal-800">
             <Database className="h-3.5 w-3.5" />
-            <span>{indexReady ? `LOCAL INDEX · ${knowledgeStats.notes} NOTES · ${knowledgeStats.custom} CUSTOM · ${knowledgeStats.terms} TERMS` : "LOCAL INDEX · 建立中"}</span>
+            <span>{indexReady ? `LOCAL INDEX · ${knowledgeStats.notes} NOTES · ${knowledgeStats.custom} CUSTOM · ${knowledgeStats.assets} TEXT ASSETS · ${knowledgeStats.terms} TERMS` : "LOCAL INDEX · 建立中"}</span>
           </div>
           <section className="mb-4 rounded-md border border-teal-800/15 bg-teal-700/[0.045] p-2">
             <button type="button" onClick={() => setTagOpen((open) => !open)} className="flex w-full items-center gap-2 px-1 py-1 text-left"><Tags className="h-3.5 w-3.5 text-teal-800" /><span className="section-label text-teal-800">EXPLORE TAGS</span><span className="ml-auto font-mono text-[10px] text-teal-800">{knowledgeTags.length}</span></button>
@@ -908,7 +922,7 @@ export default function Home() {
                       onClick={() => selectKnowledgeResult(result)}
                       className="group flex w-full items-start gap-3 px-4 py-3.5 text-left transition hover:bg-teal-700/[0.045] sm:px-6"
                     >
-                      <span className="mt-0.5 rounded-sm border border-teal-800/20 bg-teal-700/[0.08] px-1.5 py-0.5 font-mono text-[10px] font-bold text-teal-800">{result.record.kind === "term" ? "TERM" : "NOTE"}</span>
+                      <span className="mt-0.5 rounded-sm border border-teal-800/20 bg-teal-700/[0.08] px-1.5 py-0.5 font-mono text-[10px] font-bold text-teal-800">{result.record.kind === "term" ? "TERM" : result.record.kind === "asset" ? "ASSET" : "NOTE"}</span>
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                           <strong className="font-serif text-base group-hover:text-teal-900"><HighlightedSearchText value={result.record.title} query={query} /></strong>
@@ -930,6 +944,7 @@ export default function Home() {
 
             <article ref={articleRef} className="reading-paper prose prose-slate max-w-none px-5 py-7 sm:px-9 sm:py-9">
               <WikiMarkdown markdown={selectedNote.body} onOpenNote={openWikiNote} />
+              <FileRelationsPanel note={selectedNote} onOpenAssets={(assetPath) => { if (assetPath) setSelectedAssetPath(assetPath); setAssetsOpen(true); }} refreshKey={assetRefreshKey} />
             </article>
           </section>
         </main>

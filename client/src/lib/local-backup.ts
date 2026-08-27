@@ -201,6 +201,13 @@ export async function exportMarkdownWorkspace() {
   downloadBlob(await response.blob(), `JavaBase-knowledge-base-${new Date().toISOString().slice(0, 10)}.zip`);
 }
 
+export async function exportWorkspaceArchive() {
+  if (!isLocalWorkspaceAvailable()) throw new Error("整個本地 Workspace 匯出只在 localhost 本機開發伺服器可用。");
+  const response = await fetch("/api/local/export-workspace", { cache: "no-store" });
+  if (!response.ok) throw new Error("無法匯出本地 Workspace。");
+  downloadBlob(await response.blob(), `JavaBase-workspace-${new Date().toISOString().slice(0, 10)}.zip`);
+}
+
 export async function rescanMarkdownWorkspace() {
   if (!isLocalWorkspaceAvailable()) throw new Error("重新掃描只在 localhost 本機開發伺服器可用。");
   return localGet<MarkdownWorkspaceScan>("rescan");

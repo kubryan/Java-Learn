@@ -27,6 +27,26 @@ describe("knowledge-db pure helpers", () => {
     expect(records.length).toBeGreaterThan(1);
   });
 
+  it("indexes text assets separately from Markdown notes", () => {
+    const records = buildKnowledgeRecords(notes.slice(0, 1), [{
+      path: "assets/example.txt",
+      name: "example.txt",
+      content: "Fabric registry notes",
+      modifiedAt: undefined,
+    }]);
+    const assetRecord = records.find((record) => record.kind === "asset");
+
+    expect(assetRecord).toMatchObject({
+      id: "asset:assets/example.txt",
+      kind: "asset",
+      origin: "asset",
+      category: "Workspace Assets",
+      path: "content/assets/example.txt",
+      searchText: "Fabric registry notes",
+    });
+    expect(records.some((record) => record.kind === "note")).toBe(true);
+  });
+
   it("treats custom Markdown notes as Markdown-backed custom records", () => {
     const records = buildKnowledgeRecords([
       {
