@@ -130,13 +130,13 @@ Java 的 `assert` 可以把「程式設計者相信應該成立的條件」寫�
 assert range >= 0 : "range must not be negative";
 ```
 
-當 assertions 啟用且條件為 `false` 時，JVM 會丟出 `AssertionError`；也可以省略 message：
+當 assertions 啟用且條件為 `false` 時，JVM 會丟出 `AssertionError`；也可以省略 message。[4]
 
 ```java
 assert currentThread == serverThread;
 ```
 
-但請記住：**`assert` 不等於 `if`。** Assertion 是開發／測試期間的內部 invariant 檢查，不應承擔玩家輸入、權限、網路 payload、設定檔或其他 production contract 的必要驗證。更重要的是，assertions 可能預設沒有啟用；啟動 JVM 時需要使用 `-ea` 或 `-enableassertions`：
+但請記住：**`assert` 不等於 `if`。** Assertion 是開發／測試期間的內部 invariant 檢查，不應承擔玩家輸入、權限、網路 payload、設定檔或其他 production contract 的必要驗證。更重要的是，assertions 可能預設沒有啟用；啟動 JVM 時需要使用 `-ea` 或 `-enableassertions`。[4]
 
 ```text
 java -ea com.example.Main
@@ -192,3 +192,4 @@ public final class BlockDamage {
 [1]: https://dev.java/learn/language-basics/ "Java Language Basics — Dev.java"
 [2]: https://docs.oracle.com/javase/specs/jls/se25/html/jls-5.html "Conversions and Contexts — Java Language Specification"
 [3]: https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html "Expressions — Java Language Specification"
+[4]: https://docs.oracle.com/cd/E19683-01/806-7930/assert-5/index.html "Enabling and Disabling Assertions — Oracle Java Documentation"
