@@ -4,8 +4,8 @@ titleEn: Debugging
 topic: Debugging
 terms: Debugging, Breakpoint, Step Over, Step Into, Step Out, Watch, Call Stack, Debug Console, Exception Stack Trace, Root Cause, Cause, Suppressed Exception, jdb, JPDA, Conditional Breakpoint, Thread Dump
 slug: java-debugging
-category: Debugging
-order: 90
+category: Java 開發
+order: 7
 level: 入門到進階
 tags: Java, Debugging, Breakpoint, Stack Trace, jdb, Minecraft, Fabric, NeoForge, Paper, Mod, Plugin
 aliases: Debugging, 除錯, Stack Trace, 堆疊追蹤, Breakpoint, 中斷點, Call Stack, 呼叫堆疊

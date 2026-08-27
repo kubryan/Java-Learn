@@ -237,7 +237,7 @@ Record 的 component reference 是 final，但如果 component 指向 mutable li
 
 ## Immutability｜不可變性與 Mutable Object
 
-`final` reference 不能重新指向另一個 object，但不會自動讓 object immutable。這個差異、`final List<String>` 仍可 `add`、`List.copyOf`、`Collections.unmodifiableList`、defensive copy、mutable key、thread safety 與 Minecraft state snapshot 已整理成獨立 handbook：`01-java-basics/10-immutability.md`。本篇只保留判斷原則：先確認 state owner，再決定 immutable value、mutable owner、snapshot、view、lock 或 scheduler；不要把 final、只讀 collection 與 thread-safe 當成同義詞。
+`final` reference 不能重新指向另一個 object，但不會自動讓 object immutable。這個差異、`final List<String>` 仍可 `add`、`List.copyOf`、`Collections.unmodifiableList`、defensive copy、mutable key、thread safety 與 Minecraft state snapshot 已整理成獨立 handbook：`10-java-development/04-immutability.md`。本篇只保留判斷原則：先確認 state owner，再決定 immutable value、mutable owner、snapshot、view、lock 或 scheduler；不要把 final、只讀 collection 與 thread-safe 當成同義詞。
 
 ## Pattern Matching｜模式匹配
 
@@ -343,7 +343,7 @@ Minecraft 的 world、entity、registry 與大部分遊戲狀態不能任意從�
 
 ## Debugging｜除錯與 Stack Trace
 
-Debugging 已加入獨立 handbook：`08-debugging/01-debugging.md`。請依序學習 Breakpoint、Step Over、Step Into、Step Out、Watch、Call Stack、Debug Console 與 Exception Stack Trace，再練習從 `Caused by` 和第一個有意義的自有 frame 找 root cause。[10]
+Debugging 已加入獨立 handbook：`10-java-development/06-debugging.md`。請依序學習 Breakpoint、Step Over、Step Into、Step Out、Watch、Call Stack、Debug Console 與 Exception Stack Trace，再練習從 `Caused by` 和第一個有意義的自有 frame 找 root cause。[10]
 
 ```text
 完整 stack trace

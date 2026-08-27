@@ -4,7 +4,7 @@ import { bilingualGuides, bilingualSearchTerms, guideForCategory } from "./bilin
 
 describe("bilingual guides", () => {
   it("contains a usable guide for every main category", () => {
-    for (const category of ["Java 基礎", "Python 基礎", "Fabric", "NeoForge"]) {
+    for (const category of ["Java 基礎", "Java 開發", "Python 基礎", "Fabric", "NeoForge"]) {
       const guide = guideForCategory(category);
       expect(guide.explanation).not.toBe("");
       expect(guide.checkpoint).not.toBe("");
@@ -17,6 +17,13 @@ describe("bilingual guides", () => {
     expect(javaTerms).toContain("變數");
     expect(javaTerms).toContain("variable");
     expect(javaTerms).toContain(bilingualGuides["Java 基礎"].checkpoint);
+  });
+
+  it("includes Java Development engineering vocabulary", () => {
+    const developmentTerms = bilingualSearchTerms["Java 開發"];
+    expect(developmentTerms).toContain("建置工具");
+    expect(developmentTerms).toContain("build tool");
+    expect(developmentTerms).toContain("version control");
   });
 
   it("falls back to the beginner guide for unknown categories", () => {

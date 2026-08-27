@@ -22,6 +22,7 @@ export type Note = {
 export const categories = [
   "開始使用",
   "Java 基礎",
+  "Java 開發",
   "Collections",
   "Java 現代語法",
   "Exception",
@@ -43,7 +44,7 @@ const noteModules = import.meta.glob("../content/**/*.md", {
 }) as Record<string, string>;
 
 function categoryTags(category: string) {
-  if (["Java 基礎", "Collections", "Java 現代語法", "Exception", "JVM", "物件導向", "桌面工具", "後端 API"].includes(category)) return ["Java"];
+  if (["Java 基礎", "Java 開發", "Collections", "Java 現代語法", "Exception", "JVM", "物件導向", "桌面工具", "後端 API"].includes(category)) return ["Java"];
   if (category === "Python 基礎") return ["Python"];
   if (category === "Fabric") return ["Minecraft", "Fabric"];
   if (category === "NeoForge") return ["Minecraft", "NeoForge"];

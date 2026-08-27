@@ -22,6 +22,7 @@ export const javaBaseTree: KnowledgeFolder = {
       label: "Java",
       children: [
         { id: "java-basics", label: "基礎", categories: ["Java 基礎"], directory: "01-java-basics" },
+        { id: "java-development", label: "Java 開發", categories: ["Java 開發"], directory: "10-java-development" },
         { id: "java-oop", label: "OOP", categories: ["物件導向"], directory: "03-java-oop" },
         { id: "java-collections", label: "Collection", tags: ["Collection", "Collections"] },
         { id: "java-exception", label: "Exception", tags: ["Exception", "Exceptions"] },

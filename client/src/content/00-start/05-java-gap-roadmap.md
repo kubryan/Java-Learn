@@ -28,22 +28,22 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 | ⬜ | 作用域｜Scope | ⭐⭐ | `01-java-basics/07-java-core-gaps.md` |
 | ⬜ | `static`｜Static | ⭐⭐⭐ | `01-java-basics/07-java-core-gaps.md` |
 | ⬜ | `final`｜Final | ⭐⭐⭐ | `01-java-basics/07-java-core-gaps.md` |
-| ⭐ | String／StringBuilder｜字串與字串建構器獨立篇 | ⭐⭐⭐ | `01-java-basics/08-strings.md` |
-| ⭐ | Package／Import／Access Modifier｜套件、匯入與存取修飾子獨立篇 | ⭐⭐⭐ | `01-java-basics/09-packages-access-modifiers.md` |
-| ⭐ | Immutability／Mutable Object｜不可變性與可變物件獨立篇 | ⭐⭐⭐ | `01-java-basics/10-immutability.md` |
+| ⭐ | String／StringBuilder｜字串與字串建構器獨立篇 | ⭐⭐⭐ | `10-java-development/05-string-stringbuilder.md` |
+| ⭐ | Package／Import／Access Modifier｜套件、匯入與存取修飾子獨立篇 | ⭐⭐⭐ | `10-java-development/01-packages-imports.md` |
+| ⭐ | Immutability／Mutable Object｜不可變性與可變物件獨立篇 | ⭐⭐⭐ | `10-java-development/04-immutability.md` |
 | ✅ | Assertions｜斷言（精簡、低優先級） | ⭐ | `01-java-basics/07-java-core-gaps.md` |
 
 ## String／StringBuilder 獨立學習入口
 
-`String` 與 `StringBuilder` 已獨立成 `01-java-basics/08-strings.md`。請先理解 String immutable 與 StringBuilder mutable，再練習 `equals`、`append`、`String.join`、多行文字、Minecraft log／command 與 JSON 邊界。小型固定文字組合可使用 `"A" + value`；大量動態累積才考慮 StringBuilder，但正式 JSON／NBT／payload 仍應使用 serializer／codec。
+`String` 與 `StringBuilder` 已獨立成 `10-java-development/05-string-stringbuilder.md`。請先理解 String immutable 與 StringBuilder mutable，再練習 `equals`、`append`、`String.join`、多行文字、Minecraft log／command 與 JSON 邊界。小型固定文字組合可使用 `"A" + value`；大量動態累積才考慮 StringBuilder，但正式 JSON／NBT／payload 仍應使用 serializer／codec。
 
 ## Package／Import／Access Modifier 獨立學習入口
 
-`package`、`import`、`public`、`protected`、`private` 與 package-private 已整理到 `01-java-basics/09-packages-access-modifiers.md`。請用 exact package、fully qualified name 與 access table 判斷 class／method 為什麼可見；再把 `common`、`client`、`registry`、`entity`、`item`、`block` 與 `util` 對照到 Minecraft 專案。特別注意：subpackage 不是同一個 package，`import` 不會增加權限，而 package 名稱也不會自動建立 Fabric／NeoForge／Paper 的 side boundary。
+`package`、`import`、`public`、`protected`、`private` 與 package-private 已整理到 `10-java-development/01-packages-imports.md`。請用 exact package、fully qualified name 與 access table 判斷 class／method 為什麼可見；再把 `common`、`client`、`registry`、`entity`、`item`、`block` 與 `util` 對照到 Minecraft 專案。特別注意：subpackage 不是同一個 package，`import` 不會增加權限，而 package 名稱也不會自動建立 Fabric／NeoForge／Paper 的 side boundary。
 
 ## Immutability／Mutable Object 獨立學習入口
 
-`final` reference 與 object immutable 是不同問題，已整理到 `01-java-basics/10-immutability.md`。請先掌握 `final List<String>` 為什麼仍可 `add`、`List.copyOf` 與 `Collections.unmodifiableList` 的差異，再練習 defensive copy、record shallow immutability、HashMap mutable key 與 Minecraft immutable snapshot。這篇會連結 Collections、Object Contract、Concurrency 與 Serialization，避免把 final、只讀 view、snapshot、deep immutable 與 thread-safe 混成同一個概念。
+`final` reference 與 object immutable 是不同問題，已整理到 `10-java-development/04-immutability.md`。請先掌握 `final List<String>` 為什麼仍可 `add`、`List.copyOf` 與 `Collections.unmodifiableList` 的差異，再練習 defensive copy、record shallow immutability、HashMap mutable key 與 Minecraft immutable snapshot。這篇會連結 Collections、Object Contract、Concurrency 與 Serialization，避免把 final、只讀 view、snapshot、deep immutable 與 thread-safe 混成同一個概念。
 
 Assertions 屬於低優先級的 Java 基礎補充，已在 `01-java-basics/07-java-core-gaps.md` 提供精簡說明：`assert condition;` 是可停用的內部 invariant 檢查，不等於 `if`，也不能取代 command、payload、權限或設定驗證；需要測試時用 JVM `-ea` 開啟。
 
@@ -59,7 +59,7 @@ Assertions 屬於低優先級的 Java 基礎補充，已在 `01-java-basics/07-j
 | ⬜ | 抽象類別｜Abstract Class | ⭐⭐⭐ | `03-oop/02-oop-core-gaps.md` |
 | ⭐ | 介面｜Interface S 級獨立篇 | ⭐⭐⭐ | `03-oop/03-interface.md` |
 | ⬜ | 組合｜Composition | ⭐⭐ | `03-oop/02-oop-core-gaps.md` |
-| ⭐ | Object Contract｜equals、hashCode、toString 獨立篇 | ⭐⭐⭐ | `03-oop/04-object-contract.md` |
+| ⭐ | Object Contract｜equals、hashCode、toString 獨立篇 | ⭐⭐⭐ | `10-java-development/03-equals-hashcode-tostring.md` |
 
 ## S 級核心：Interface 獨立學習入口
 
@@ -69,7 +69,7 @@ Fabric callback、Paper Listener、Java `Comparator` 與許多 Minecraft registr
 
 ## S 級核心：Object Contract 獨立學習入口
 
-`equals()`、`hashCode()` 與 `toString()` 已獨立成 `03-oop/04-object-contract.md`。請先理解 `==` 與 value equality，再掌握 equals 的 reflexive、symmetric、transitive、consistent、non-null 契約，以及「equals 相等 ⇒ hashCode 必須相等」的核心規則。
+`equals()`、`hashCode()` 與 `toString()` 已獨立成 `10-java-development/03-equals-hashcode-tostring.md`。請先理解 `==` 與 value equality，再掌握 equals 的 reflexive、symmetric、transitive、consistent、non-null 契約，以及「equals 相等 ⇒ hashCode 必須相等」的核心規則。
 
 這篇會接著連結 `HashSet`、`HashMap`、mutable key、record、繼承 equality 與 Minecraft 的 `UUID`、`BlockPos`、Fabric／Yarn 的 `Identifier`、NeoForge／Mojang mappings 的 `ResourceLocation` 與 registry key。它是 Collections 的必要前置，不是只為了寫漂亮的 log。
 
@@ -135,20 +135,23 @@ JavaBase 的本地 Markdown Workspace 正好是 I/O 的實戰場景：Markdown �
 
 | 狀態 | 主題 | Minecraft 優先級 | JavaBase 入口 |
 |---|---|---:|---|
-| ⭐ | Debugging｜除錯與 Stack Trace 獨立篇 | ⭐⭐⭐ | `08-debugging/01-debugging.md` |
-| ⬜ | Breakpoint、Step Over／Into／Out | ⭐⭐⭐ | `08-debugging/01-debugging.md` |
-| ⬜ | Watch、Call Stack、Debug Console | ⭐⭐⭐ | `08-debugging/01-debugging.md` |
-| ⬜ | Exception Stack Trace 與 Root Cause | ⭐⭐⭐ | `08-debugging/01-debugging.md` |
+| ⭐ | Debugging｜除錯與 Stack Trace 獨立篇 | ⭐⭐⭐ | `10-java-development/06-debugging.md` |
+| ⬜ | Breakpoint、Step Over／Into／Out | ⭐⭐⭐ | `10-java-development/06-debugging.md` |
+| ⬜ | Watch、Call Stack、Debug Console | ⭐⭐⭐ | `10-java-development/06-debugging.md` |
+| ⬜ | Exception Stack Trace 與 Root Cause | ⭐⭐⭐ | `10-java-development/06-debugging.md` |
 
-## Java 專案工具
+## Java Development 工程能力
 
 | 狀態 | 主題 | Minecraft 優先級 | JavaBase 入口 |
 |---|---|---:|---|
-| ⭐ | Maven｜`pom.xml` 獨立篇 | ⭐⭐ | `09-project-tools/01-java-project-tools.md` |
-| ⭐ | Gradle｜`build.gradle` 獨立篇 | ⭐⭐⭐ | `09-project-tools/01-java-project-tools.md` |
-| ✅ | Dependency、Repository、Lifecycle、Plugin、Scope | ⭐⭐⭐ | `09-project-tools/01-java-project-tools.md` |
-| ✅ | Task、Gradle Wrapper、`settings.gradle` | ⭐⭐⭐ | `09-project-tools/01-java-project-tools.md` |
-| ⬜ | Fabric Loom、NeoForge Gradle、Paper build | ⭐⭐⭐ | `09-project-tools/01-java-project-tools.md` |
+| ✅ | Maven｜`pom.xml` 對照篇 | ⭐⭐ | `10-java-development/08-maven-gradle.md` |
+| ✅ | Gradle｜`build.gradle` 對照篇 | ⭐⭐⭐ | `10-java-development/08-maven-gradle.md` |
+| ✅ | Dependency、Repository、Lifecycle、Plugin、Scope | ⭐⭐⭐ | `10-java-development/08-maven-gradle.md` |
+| ✅ | Task、Gradle Wrapper、`settings.gradle` | ⭐⭐⭐ | `10-java-development/08-maven-gradle.md` |
+| ✅ | Fabric Loom、NeoForge Gradle、Paper build | ⭐⭐⭐ | `10-java-development/08-maven-gradle.md` |
+| ✅ | Java Logging｜Logger、log level、exception cause | ⭐⭐⭐ | `10-java-development/07-logging.md` |
+| ✅ | JUnit｜`@Test`、Assertions、fixture、regression test | ⭐⭐⭐ | `10-java-development/09-junit.md` |
+| ✅ | Git for Java｜status、diff、commit、branch、recovery | ⭐⭐⭐ | `10-java-development/10-git-for-java.md` |
 
 ## Exception
 
@@ -180,7 +183,7 @@ Exception hierarchy、`Throwable`、`Error` 與「不是所有 Throwable 都應�
 
 ## 建議學習順序
 
-若目標是 Fabric 或 NeoForge，建議先完成 `static`、`final`、介面、抽象類別、多型、泛型、`ArrayList`、`HashMap`、`Enum` 與 Annotation，再學習事件 callback、Registry、payload 與 datagen。Lambda、Functional Interface 與 Method Reference 已在 `05-modern-java/01-modern-java.md` 提供最小可用範例；Optional 也已在同一篇補齊建立、轉換與 fallback API，但它的定位是表達可能缺值的回傳結果，不是全面取代 null。Stream、Serialization、Concurrency、Debugging 與 Java project tools 依序連接到真實 mod／plugin 工程；JVM 深入則放在後段，用診斷證據理解 class loading、GC、thread 與 memory leak，而不是一開始就調 JVM flags。
+若目標是 Fabric 或 NeoForge，建議先完成 `static`、`final`、介面、抽象類別、多型、泛型、`ArrayList`、`HashMap`、`Enum` 與 Annotation，再學習事件 callback、Registry、payload 與 datagen。Lambda、Functional Interface 與 Method Reference 已在 `05-modern-java/01-modern-java.md` 提供最小可用範例；Optional 也已在同一篇補齊建立、轉換與 fallback API，但它的定位是表達可能缺值的回傳結果，不是全面取代 null。Stream、Serialization、Concurrency、Java Development（含 Debugging、Logging、Maven／Gradle、JUnit、Git）依序連接到真實 mod／plugin 工程；JVM 深入則放在後段，用診斷證據理解 class loading、GC、thread 與 memory leak，而不是一開始就調 JVM flags。
 
 ```text
 型別與作用域
@@ -193,7 +196,7 @@ Annotation + Lambda + Callback
     ↓
 例外處理 + Serialization + Concurrency
     ↓
-I/O + JSON／Codec + Maven／Gradle
+I/O + JSON／Codec + Maven／Gradle + Logging／JUnit／Git
     ↓
 Fabric / NeoForge / Paper API
     ↓
@@ -206,7 +209,7 @@ JVM 深入與記憶體診斷
 
 Generics 不再只放在現代 Java 總覽中，而是獨立成一篇 S 級 handbook：`05-modern-java/00-generics.md`。請依序學習 Type Parameter、Generic Class、Generic Method、Bounded Type Parameter、Wildcard、`? extends`、`? super` 與 Type Erasure，再回頭讀現代 Java 總覽中的 Lambda、Stream、Record 與 Concurrency。
 
-第一優先是 **Interface、Generics、HashMap、ArrayList、Enum、Annotation、Reflection、Concurrency、Debugging**；第二優先是 **Serialization／JSON、I/O、Maven／Gradle**、Lambda 與 Dependency Injection；JVM 深入排在後段，但在 server crash、tick lag、class loading 與 memory leak 診斷時非常重要。這些主題會直接出現在 loader API 的事件訂閱、註冊器、資料生成、payload 型別、callback 與遊戲狀態管理中。學習時不要只看名詞，請把每篇的練習改寫成一個小型 registry、event handler 或 data object。
+第一優先是 **Interface、Generics、HashMap、ArrayList、Enum、Annotation、Reflection、Concurrency、Debugging、Logging**；第二優先是 **Serialization／JSON、I/O、Maven／Gradle、JUnit、Git**、Lambda 與 Dependency Injection；JVM 深入排在後段，但在 server crash、tick lag、class loading 與 memory leak 診斷時非常重要。這些主題會直接出現在 loader API 的事件訂閱、註冊器、資料生成、payload 型別、callback 與遊戲狀態管理中。學習時不要只看名詞，請把每篇的練習改寫成一個小型 registry、event handler 或 data object。
 
 ## References
 

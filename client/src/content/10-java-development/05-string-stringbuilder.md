@@ -4,8 +4,8 @@ titleEn: String / StringBuilder
 topic: String and StringBuilder
 terms: String, StringBuilder, Immutable, Mutable, String Concatenation, String Literal, String Pool, append, insert, delete, replace, reverse, capacity, toString, Text Composition
 slug: java-strings
-category: Java 基礎
-order: 18
+category: Java 開發
+order: 6
 level: 入門到中階
 tags: Java, String, StringBuilder, Immutable, Mutable, String Concatenation, Minecraft, Logging, Command, JSON, Text Composition
 aliases: 字串, 字串建構器, String immutable, StringBuilder mutable, 字串串接

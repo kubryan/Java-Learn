@@ -4,8 +4,8 @@ titleEn: Java Project Tools
 topic: Java Project Tools
 terms: Maven, pom.xml, Dependency, Repository, Lifecycle, Plugin, Scope, Gradle, build.gradle, settings.gradle, Task, Gradle Wrapper, Fabric Loom, NeoForge Gradle, Paper
 slug: java-project-tools
-category: Java 工程工具
-order: 91
+category: Java 開發
+order: 9
 level: 入門到中階
 tags: Java, Maven, Gradle, pom.xml, build.gradle, settings.gradle, Dependency, Repository, Plugin, Task, Wrapper, Fabric Loom, NeoForge, Paper, Minecraft Java
 aliases: Java 專案工具, Java Build Tools, Maven, Gradle, Gradle Wrapper, build.gradle, pom.xml

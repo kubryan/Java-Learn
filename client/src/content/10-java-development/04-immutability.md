@@ -4,8 +4,8 @@ titleEn: Immutability / Mutable Object
 topic: Immutability and Mutable Objects
 terms: Immutability, Immutable Object, Mutable Object, final Reference, Unmodifiable View, Defensive Copy, Shallow Immutability, Deep Immutability, List.copyOf, Map.copyOf, Set.copyOf, Collections.unmodifiableList, Record, Value Object, Thread Safety
 slug: java-immutability
-category: Java 基礎
-order: 20
+category: Java 開發
+order: 5
 level: 入門到中階
 tags: Java, Immutability, Mutable Object, final, Immutable Collection, Defensive Copy, Record, Thread Safety, Minecraft Java, State Management
 aliases: 不可變性, 可變物件, final reference, immutable object, mutable object, defensive copy

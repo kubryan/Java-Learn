@@ -29,6 +29,21 @@ export const bilingualGuides: Record<string, BilingualGuide> = {
       { zh: "方法", en: "method" },
     ],
   },
+  "Java 開發": {
+    explanation: "Java 開發不只寫 class；要能讀懂 package boundary、dependency、build tool、runtime evidence、test 與 version history。",
+    checkpoint: "Can you trace a Java change from source and dependency to test, build output, and Git history?",
+    terms: [
+      { zh: "套件與匯入", en: "package and import" },
+      { zh: "存取修飾子", en: "access modifier" },
+      { zh: "相等契約", en: "object contract" },
+      { zh: "建置工具", en: "build tool" },
+      { zh: "相依套件", en: "dependency" },
+      { zh: "日誌記錄器", en: "logger" },
+      { zh: "除錯器", en: "debugger" },
+      { zh: "單元測試", en: "unit test" },
+      { zh: "版本控制", en: "version control" },
+    ],
+  },
   "Python 基礎": {
     explanation: "Python 的縮排與物件名稱很重要；讀英文文件時先認出 name、iterable 與 slice。",
     checkpoint: "Explain why input returns a string and range excludes its stop value.",

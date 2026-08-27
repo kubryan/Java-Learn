@@ -4,8 +4,8 @@ titleEn: Object Contract / Object Methods
 topic: Object Contract
 terms: Object Contract, Object Methods, equals, hashCode, toString, Equality, Equivalence Relation, Hash Collision, HashSet, HashMap, Mutable Key, Record, UUID, BlockPos, Identifier, ResourceLocation, RegistryKey, ResourceKey
 slug: java-object-contract
-category: OOP
-order: 34
+category: Java 開發
+order: 4
 level: 中階
 tags: Java, Object, equals, hashCode, toString, Object Contract, HashSet, HashMap, Record, UUID, BlockPos, Identifier, ResourceLocation, Registry Key, Minecraft Java
 aliases: Object Contract, Object Methods, equals hashCode toString, 物件契約, 物件方法, 相等契約

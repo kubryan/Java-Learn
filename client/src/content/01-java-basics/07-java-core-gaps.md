@@ -11,7 +11,7 @@ summary: 補齊 Java 變數之後最容易卡住的五個核心概念，並用 M
 
 # Java 基礎缺口：型別轉換、運算子、作用域、`static` 與 `final`
 
-這篇補上「會宣告變數」之後，最容易讓程式出現隱性錯誤的五個概念。Java 語言基礎不只是記住語法；你要能判斷資料能否安全轉型、運算順序是否符合預期、名稱在哪個範圍有效，以及某個值究竟屬於物件還是整個類別。這些判斷會直接出現在 Minecraft 的座標、生命值、設定常數與註冊器程式中。[1] String 的 immutable、StringBuilder 的 mutable 與大量文字組合已整理到獨立篇 [`String 與 StringBuilder`](./08-strings.md)，本篇只保留 `+` 運算子的基礎提醒。
+這篇補上「會宣告變數」之後，最容易讓程式出現隱性錯誤的五個概念。Java 語言基礎不只是記住語法；你要能判斷資料能否安全轉型、運算順序是否符合預期、名稱在哪個範圍有效，以及某個值究竟屬於物件還是整個類別。這些判斷會直接出現在 Minecraft 的座標、生命值、設定常數與註冊器程式中。[1] String 的 immutable、StringBuilder 的 mutable 與大量文字組合已整理到獨立篇 [`String 與 StringBuilder`](../10-java-development/05-string-stringbuilder.md)，本篇只保留 `+` 運算子的基礎提醒。
 
 ## 型別轉換｜Type Casting ⭐⭐
 
@@ -120,7 +120,7 @@ public final class CalibrationConfig {
 }
 ```
 
-final reference 不能改指向另一個物件，但物件本身不一定不可變。`final List<String> names` 仍可能 `add`；若需要完整理解 final reference、immutable object、unmodifiable view、defensive copy、record shallow immutability 與 mutable key，請閱讀獨立篇 [`Immutability 與 Mutable Object`](./10-immutability.md)。若需要不可變集合，請選擇適合的 immutable API 或建立 defensive copy。Minecraft 的 registry key、mod id 與設定常數通常應該是 `static final`，避免執行期間被意外改寫。
+final reference 不能改指向另一個物件，但物件本身不一定不可變。`final List<String> names` 仍可能 `add`；若需要完整理解 final reference、immutable object、unmodifiable view、defensive copy、record shallow immutability 與 mutable key，請閱讀獨立篇 [`Immutability 與 Mutable Object`](../10-java-development/04-immutability.md)。若需要不可變集合，請選擇適合的 immutable API 或建立 defensive copy。Minecraft 的 registry key、mod id 與設定常數通常應該是 `static final`，避免執行期間被意外改寫。
 
 ## `assert`｜Assertions 斷言（低優先級）
 

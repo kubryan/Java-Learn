@@ -4,8 +4,8 @@ titleEn: Packages / Import / Access Modifiers
 topic: Packages and Access Modifiers
 terms: Package, Import, Static Import, Fully Qualified Name, Access Modifier, public, protected, private, package-private, Default Access, Visibility, Encapsulation, Classpath, Subpackage, Nested Class
 slug: java-packages-access-modifiers
-category: Java 基礎
-order: 19
+category: Java 開發
+order: 2
 level: 入門到中階
 tags: Java, Package, Import, Access Modifier, public, protected, private, package-private, Visibility, Encapsulation, Minecraft Java, Fabric, NeoForge, Paper
 aliases: 套件, 匯入, 存取修飾子, 存取權限, package-private, default access, public protected private
