@@ -31,6 +31,7 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 | ⭐ | String／StringBuilder｜字串與字串建構器獨立篇 | ⭐⭐⭐ | `01-java-basics/08-strings.md` |
 | ⭐ | Package／Import／Access Modifier｜套件、匯入與存取修飾子獨立篇 | ⭐⭐⭐ | `01-java-basics/09-packages-access-modifiers.md` |
 | ⭐ | Immutability／Mutable Object｜不可變性與可變物件獨立篇 | ⭐⭐⭐ | `01-java-basics/10-immutability.md` |
+| ✅ | Assertions｜斷言（精簡、低優先級） | ⭐ | `01-java-basics/07-java-core-gaps.md` |
 
 ## String／StringBuilder 獨立學習入口
 
@@ -43,6 +44,8 @@ summary: 對照 JavaBase 現有內容，補齊 Java 基礎、OOP、Collections�
 ## Immutability／Mutable Object 獨立學習入口
 
 `final` reference 與 object immutable 是不同問題，已整理到 `01-java-basics/10-immutability.md`。請先掌握 `final List<String>` 為什麼仍可 `add`、`List.copyOf` 與 `Collections.unmodifiableList` 的差異，再練習 defensive copy、record shallow immutability、HashMap mutable key 與 Minecraft immutable snapshot。這篇會連結 Collections、Object Contract、Concurrency 與 Serialization，避免把 final、只讀 view、snapshot、deep immutable 與 thread-safe 混成同一個概念。
+
+Assertions 屬於低優先級的 Java 基礎補充，已在 `01-java-basics/07-java-core-gaps.md` 提供精簡說明：`assert condition;` 是可停用的內部 invariant 檢查，不等於 `if`，也不能取代 command、payload、權限或設定驗證；需要測試時用 JVM `-ea` 開啟。
 
 ## OOP
 
@@ -95,6 +98,9 @@ Fabric callback、Paper Listener、Java `Comparator` 與許多 Minecraft registr
 | ⭐ | Enum｜列舉 S 級獨立篇 | ⭐⭐⭐ | `05-modern-java/02-enum.md` |
 | ⬜ | Pattern Matching｜模式匹配 | ⭐ | `05-modern-java/01-modern-java.md` |
 | ⭐ | Annotation｜註解 S 級獨立篇 | ⭐⭐⭐ | `05-modern-java/03-annotations.md` |
+| ✅ | `@Retention`、`@Target`、`@Documented`、`@Inherited`、`@Repeatable` | ⭐⭐⭐ | `05-modern-java/03-annotations.md` |
+| ✅ | SOURCE、CLASS、RUNTIME | ⭐⭐⭐ | `05-modern-java/03-annotations.md` |
+| ✅ | Fabric Mixin：`@Inject`、`@ModifyArg`、`@Redirect`、`@Overwrite` | ⭐⭐⭐ | `05-modern-java/03-annotations.md` |
 | ⭐ | Reflection｜反射 S 級關聯篇 | ⭐⭐⭐ | `05-modern-java/03-annotations.md` |
 | ⭐ | I/O｜輸入輸出獨立篇 | ⭐⭐ | `05-modern-java/05-io.md` |
 | ⭐ | Serialization｜序列化與 JSON 獨立篇 | ⭐⭐ | `05-modern-java/06-serialization.md` |
@@ -109,9 +115,9 @@ Enum 特別適合表示編譯時已知的有限集合；如果類型需要由玩
 
 ## S 級核心：Annotation 獨立學習入口
 
-Annotation 不再只放在現代 Java 總覽中，而是獨立成 `05-modern-java/03-annotations.md`。請依序學習 annotation metadata、Built-in Annotation、Custom Annotation、`@Retention`、`@Target`、SOURCE／CLASS／RUNTIME、Reflection，再進入各 framework 的 annotation consumer。
+Annotation 不再只放在現代 Java 總覽中，而是獨立成 `05-modern-java/03-annotations.md`。請依序學習 annotation metadata、Built-in Annotation、Custom Annotation、`@Retention`、`@Target`、`@Documented`、`@Inherited`、`@Repeatable`、SOURCE／CLASS／RUNTIME、Reflection，再進入各 framework 的 annotation consumer 與 Fabric Mixin injector。
 
-`@Override` 主要是 compiler contract；`@Inject`、`@Mixin`、`@Environment` 是 Fabric／Mixin toolchain metadata；`@Nullable` 要看 provider；`@Mod`、`@SubscribeEvent`、Spring、Lombok 與 JUnit 也各自有不同的 loader、container、processor 或 test engine。不要因為語法都以 `@` 開頭，就把它們當成同一種機制。
+`@Override` 主要是 compiler contract；`@Inject`、`@ModifyArg`、`@Redirect`、`@Overwrite`、`@Mixin`、`@Environment` 是 Fabric／Mixin toolchain metadata；`@Nullable` 要看 provider；`@Mod`、`@SubscribeEvent`、Spring、Lombok 與 JUnit 也各自有不同的 loader、container、processor 或 test engine。不要因為語法都以 `@` 開頭，就把它們當成同一種機制。
 
 ## Stream API 獨立學習入口
 

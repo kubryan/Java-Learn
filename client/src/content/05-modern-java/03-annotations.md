@@ -4,8 +4,8 @@ slug: java-annotations
 category: Java 現代語法
 order: 73
 level: 中階到進階
-tags: S 級, Annotation, 註解, Built-in Annotation, Custom Annotation, Retention, RetentionPolicy, Target, ElementType, Runtime Annotation, Reflection, Override, Inject, Mixin, Environment, Nullable, Spring, Lombok, JUnit, Minecraft Java
-aliases: Annotation, 註解, Java Annotation, Built-in Annotation, Custom Annotation, Retention, Target, Runtime Annotation, Reflection
+tags: S 級, Annotation, 註解, Built-in Annotation, Custom Annotation, Retention, RetentionPolicy, Target, ElementType, Runtime Annotation, Reflection, Override, Inject, ModifyArg, Redirect, Overwrite, Mixin, Environment, Nullable, Spring, Lombok, JUnit, Minecraft Java
+aliases: Annotation, 註解, Java Annotation, Built-in Annotation, Custom Annotation, Retention, Target, Runtime Annotation, Reflection, ModifyArg, Redirect, Overwrite
 summary: Fabric、NeoForge、Spring、Lombok 與 JUnit 都會遇到的 Annotation S 級章節，完整拆解內建註解、自訂註解、Retention、Target、runtime processing 與 Reflection。 ⭐⭐⭐
 ---
 
@@ -24,7 +24,7 @@ Annotation 本身不會自動產生行為。真正執行行為的是 compiler、
 3. 理解 `SOURCE`、`CLASS` 與 `RUNTIME` 三種 retention policy。
 4. 使用 Reflection 讀取 class、method、field 上的 runtime annotation。
 5. 分辨 annotation 的 declaration target 與 type-use target。
-6. 正確閱讀 `@Override`、`@Inject`、`@Mixin`、`@Environment` 與 `@Nullable`。
+6. 正確閱讀 `@Override`、`@Inject`、`@ModifyArg`、`@Redirect`、`@Overwrite`、`@Mixin`、`@Environment` 與 `@Nullable`。
 7. 理解 Fabric、NeoForge、Spring、Lombok 與 JUnit 的 annotation 行為不能直接混用。
 
 ## 1. Annotation 是 metadata，不是自動行為
@@ -347,6 +347,9 @@ public void tools() { }
 |---|---|---|
 | `@Override` | Java compiler | 檢查 override 意圖 |
 | `@Inject` | Sponge Mixin／Fabric mod toolchain | 描述要注入 method 的位置與 callback |
+| `@ModifyArg` | Sponge Mixin／Fabric mod toolchain | 修改 target method 中某次 invocation 的 argument |
+| `@Redirect` | Sponge Mixin／Fabric mod toolchain | 將指定 method／field invocation 導向 mixin handler |
+| `@Overwrite` | Sponge Mixin／Fabric mod toolchain | 直接取代 target method implementation，侵入性較高 |
 | `@Mixin` | Sponge Mixin／Fabric mod toolchain | 指定要修改或擴充的 target class |
 | `@Environment` | Fabric API／loader | 標示 client 或 server environment 的使用邊界 |
 | `@Nullable` | 外部 nullness／IDE／static-analysis library | 表達可能為 null；實際 runtime 行為依 provider |
@@ -380,6 +383,51 @@ public abstract class ServerPlayerMixin {
 4. `@Override` 若出現，仍然只是 Java compiler contract，不是 Mixin injection。
 
 `@Inject` 的語意由 Mixin transformer 在 class processing 階段處理，不是 Java Reflection 自動執行。實際 method name、descriptor、mapping 與 callback signature 必須以目前 Minecraft／Fabric 版本的 source 與 mappings 為準；不要從另一個版本直接複製。
+
+### `@ModifyArg`、`@Redirect` 與 `@Overwrite`
+
+這些 annotation 都是 Mixin transformer metadata，不是 Java built-in，也不是普通的 runtime event registration。選擇時先問：「我需要增加 callback、改一個 invocation argument、改一個 invocation，還是完全取代 method？」
+
+| Annotation | 介入方式 | 風險與適用情境 |
+|---|---|---|
+| `@Inject` | 在 target method 的 injection point 增加 callback | 通常最可組合；要正確處理 `@At`、callback signature 與 cancellable 規則 |
+| `@ModifyArg` | 修改某次 method invocation 傳入的 argument | 影響範圍較窄，但必須精準指定 target invocation 與 argument index |
+| `@Redirect` | 取代指定的 method call、field get 或 field set | 行為改變較直接；target descriptor 與 mapping 變動時容易失效 |
+| `@Overwrite` | 直接提供 target method 的替代實作 | 最侵入、較難與其他 mod 組合；只有在其他 injector 不足時才考慮 |
+
+概念範例如下；實際 class、method、descriptor 與 callback signature 必須依目前 Minecraft／Fabric mappings 驗證：
+
+```java
+@Mixin(CalibrationTarget.class)
+public abstract class CalibrationTargetMixin {
+    @ModifyArg(
+        method = "buildMessage",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/text/Text;literal(Ljava/lang/String;)Lnet/minecraft/text/Text;"
+        ),
+        index = 0
+    )
+    private String addPrefix(String original) {
+        return "[Calibration] " + original;
+    }
+
+    @Redirect(
+        method = "tick",
+        at = @At(
+            value = "INVOKE",
+            target = "Lcom/example/CalibrationTarget;isEnabled()Z"
+        )
+    )
+    private boolean redirectEnabled(CalibrationTarget target) {
+        return target.isEnabled() && !target.isSuspended();
+    }
+
+    // @Overwrite 應最後才使用，並且要有清楚的版本與衝突風險說明。
+}
+```
+
+`@Overwrite` 不是「比較短的 `@Inject`」。它會取代原本 method body，因此可能覆蓋 vanilla、loader 或其他 mod 的修改；在可行時，優先使用較窄的 `@Inject`、`@ModifyArg` 或 `@Redirect`。所有 Mixin injector 都要測試 target method 是否存在、啟動時 mapping 是否正確，以及不同 loader／Minecraft 版本是否仍相容。
 
 `@Environment(EnvType.CLIENT)` 則是 loader／API 層級的 environment metadata。client-only class、renderer 或 client initializer 不能因為加了 annotation 就安全地在 dedicated server 載入；side separation 仍然要從 entrypoint、source set、class loading 與依賴設計一起處理。
 

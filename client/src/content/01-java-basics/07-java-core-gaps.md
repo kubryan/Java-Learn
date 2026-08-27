@@ -122,6 +122,34 @@ public final class CalibrationConfig {
 
 final reference 不能改指向另一個物件，但物件本身不一定不可變。`final List<String> names` 仍可能 `add`；若需要完整理解 final reference、immutable object、unmodifiable view、defensive copy、record shallow immutability 與 mutable key，請閱讀獨立篇 [`Immutability 與 Mutable Object`](./10-immutability.md)。若需要不可變集合，請選擇適合的 immutable API 或建立 defensive copy。Minecraft 的 registry key、mod id 與設定常數通常應該是 `static final`，避免執行期間被意外改寫。
 
+## `assert`｜Assertions 斷言（低優先級）
+
+Java 的 `assert` 可以把「程式設計者相信應該成立的條件」寫成可啟用的檢查：
+
+```java
+assert range >= 0 : "range must not be negative";
+```
+
+當 assertions 啟用且條件為 `false` 時，JVM 會丟出 `AssertionError`；也可以省略 message：
+
+```java
+assert currentThread == serverThread;
+```
+
+但請記住：**`assert` 不等於 `if`。** Assertion 是開發／測試期間的內部 invariant 檢查，不應承擔玩家輸入、權限、網路 payload、設定檔或其他 production contract 的必要驗證。更重要的是，assertions 可能預設沒有啟用；啟動 JVM 時需要使用 `-ea` 或 `-enableassertions`：
+
+```text
+java -ea com.example.Main
+```
+
+沒有啟用時，assert statement 的條件 expression 甚至可能不會被 evaluation。因此不要把副作用放進 assertion：
+
+```java
+assert queue.removeFirst() != null; // ❌ disabled 時 removeFirst() 可能根本不執行
+```
+
+對 Minecraft mod／plugin 而言，玩家 command、client payload、權限與範圍檢查應使用明確的 `if`、回傳結果或 exception；assert 比較適合測試內部 registry invariant、只在開發環境驗證的 owner-thread assumption，並且要知道正式啟動參數是否真的開啟它。這個主題屬於低優先級，先理解存在與邊界即可。
+
 ## 綜合範例：安全計算方塊傷害
 
 ```java
