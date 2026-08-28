@@ -68,6 +68,12 @@ export const bilingualGuides: Record<string, BilingualGuide> = {
       { zh: "結構", en: "struct" },
       { zh: "未定義行為", en: "undefined behavior" },
       { zh: "原生開發", en: "native development" },
+      { zh: "所有權契約", en: "ownership contract" },
+      { zh: "清理路徑", en: "cleanup path" },
+      { zh: "預處理器", en: "preprocessor" },
+      { zh: "字串化", en: "stringizing" },
+      { zh: "記號拼接", en: "token pasting" },
+      { zh: "未定義行為消毒器", en: "UndefinedBehaviorSanitizer" },
     ],
   },
   "物件導向": {

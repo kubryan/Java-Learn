@@ -30,10 +30,12 @@ C 是一門以明確型別、函式、記憶體與編譯流程為核心的語言
 | 4 | `04-pointers-memory.md` | address、pointer、`malloc`、`free` | 建立 Java reference 與 native memory 的正確區別 |
 | 5 | `05-structs-enums-headers.md` | `struct`、`enum`、`typedef`、header | 對照 Java class／record／enum，但不混用語意 |
 | 6 | `06-build-debugging.md` | GCC、warnings、GDB、sanitizer、undefined behavior | 對照 Java compiler、debugger、stack trace 與 JVM tooling |
+| 7 | `07-memory-best-practices.md` | ownership、cleanup、overflow、safe `realloc`、sanitizer | 對照 Java resource lifetime 與 native boundary |
+| 8 | `08-preprocessor-macros.md` | conditional compilation、stringizing、token pasting、variadic macro | 對照 Java annotation／Gradle configuration，但不混用層次 |
 
 ## 完成標準
 
-完成本 track 後，你應該能說明 C source 如何經過 preprocessing、compilation、assembly 與 linking 產生 executable；能使用 `gcc -Wall -Wextra -std=c17` 編譯小程式；能分辨 array、pointer、C string 與動態記憶體；也能從 compiler warning 或 GDB breakpoint 開始定位錯誤。
+完成本 track 後，你應該能說明 C source 如何經過 preprocessing、compilation、assembly 與 linking 產生 executable；能使用 `gcc -Wall -Wextra -std=c17` 編譯小程式；能分辨 array、pointer、C string 與動態記憶體；也能從 compiler warning 或 GDB breakpoint 開始定位錯誤。進一步完成進階篇後，應能寫出 ownership contract、設計單一 cleanup path、檢查 allocation size overflow，並判斷一個 macro 是否應改成 function 或 `static inline`。
 
 ## C 與 Java 的邊界表
 

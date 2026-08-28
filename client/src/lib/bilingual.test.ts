@@ -31,6 +31,8 @@ describe("bilingual guides", () => {
     expect(cTerms).toContain("指標");
     expect(cTerms).toContain("pointer");
     expect(cTerms).toContain("undefined behavior");
+    expect(cTerms).toContain("ownership contract");
+    expect(cTerms).toContain("token pasting");
   });
 
   it("falls back to the beginner guide for unknown categories", () => {

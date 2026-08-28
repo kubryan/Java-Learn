@@ -50,12 +50,16 @@ describe("notes", () => {
       "c-pointers-memory",
       "c-structs-enums-headers",
       "c-build-debugging",
+      "c-memory-best-practices",
+      "c-preprocessor-macros",
     ];
 
     expect(categories).toContain("C 語言基礎");
     expect(cNotes.map((note) => note.slug)).toEqual(expect.arrayContaining(expectedSlugs));
     expect(cNotes.every((note) => note.tags.includes("C"))).toBe(true);
     expect(cNotes.find((note) => note.slug === "c-basics")?.path).toContain("11-c-basics/00-c-basics.md");
+    expect(searchNotes("ownership contract", "C 語言基礎").some((note) => note.slug === "c-memory-best-practices")).toBe(true);
+    expect(searchNotes("token pasting", "C 語言基礎").some((note) => note.slug === "c-preprocessor-macros")).toBe(true);
   });
 
   it("searches bilingual terms and filters by category or tag", () => {
