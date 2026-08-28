@@ -64,6 +64,16 @@ summary: 將物品註冊為可被遊戲辨識的資源。
 
 > 這些寫入功能只存在於本機開發伺服器，因為它需要 Node.js 直接存取目前專案資料夾。它不限定 Windows，但不同作業系統需要對專案資料夾具備讀寫權限；已部署的網站與 GitHub Pages 不能、也不應該直接存取你的電腦硬碟。
 
+## Java Learning Playground：本機編譯／執行 `.java`
+
+在 Workspace Assets 匯入或選取 `.java` 檔案後，Java code viewer 下方會顯示 **Java Learning Playground**。按「編譯」只執行 `javac`；按「執行」會先編譯，再用本機 `java` 執行目前檔案內容，並顯示 compiler diagnostics、stdout、stderr、執行時間與 timeout 狀態。
+
+使用前請確認 Windows 的 `java` 與 `javac` 已加入 PATH，或可在專案終端機直接執行 `java -version` 與 `javac -version`。目前 runner 以單一 `.java` 檔案與其 public／主 class 為教學範例邊界；不會自動建立 Gradle／Maven classpath，也不會執行整個 Minecraft mod 或 plugin 專案。
+
+這個功能只會在 localhost 的 Vite workspace server 提供。source 會寫入作業系統暫存目錄，使用 `-proc:none` 停用 annotation processor，執行時設定有限的 heap／stack、5 秒 timeout、64 KB 輸出上限，完成後刪除暫存目錄。runner 也會拒絕常見的外部程序、網路、檔案、反射、JVM internal API 與執行緒 API 文字模式。
+
+> 這是針對**可信教學程式碼**的最佳努力隔離，不是完整的作業系統 sandbox。不要執行不信任的 Java 原始碼；需要更強隔離時，應改用獨立 VM、container 或專用 sandbox。程式碼、輸出與編譯結果不會上傳雲端，也不會寫回 Markdown Knowledge Source 或 Workspace Asset。
+
 ## 建立 Wiki 知識連結
 
 在文章正文使用 `[[筆記名稱]]`，即可把文字變成可點擊的內部連結。例如：

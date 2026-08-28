@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import { execFile as execFileCallback } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { deflateRawSync } from "node:zlib";
@@ -348,6 +349,17 @@ function vitePluginLocalKnowledgeManager(): Plugin {
     if (req.socket.remoteAddress && !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress)) { res.writeHead(403); res.end("Local access only"); return; }
     try {
       const input = req.method === "GET" ? {} : await body(req);
+      if (req.url === "/java-run" && req.method === "POST") {
+        const sourcePath = String(input.path || "").replace(/\\/g, "/");
+        const target = safePath(sourcePath);
+        if (!sourcePath.toLocaleLowerCase().endsWith(".java") || !fs.existsSync(target) || !fs.statSync(target).isFile()) throw new Error("只能執行存在於本地 workspace 的 .java Asset。");
+        if (typeof input.content !== "string" || !input.content.trim()) throw new Error("Java source 不可為空白。");
+        const mode: JavaRunMode = input.mode === "compile" ? "compile" : "run";
+        const result = await runJavaSource(sourcePath, input.content, mode);
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+        res.end(JSON.stringify({ ok: true, ...result }));
+        return;
+      }
       if ((req.url === "/meta" || req.url === "/rescan") && req.method === "GET") { const files = listMarkdown(); const assets = listAssets(); res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify({ ok: true, files, assets, scannedAt: new Date().toISOString() })); invalidateMarkdownModules(); return; }
       if (req.url === "/assets" && req.method === "GET") { res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify({ ok: true, assets: listAssets() })); return; }
       if (req.url === "/asset" && req.method === "POST") { const relative = String(input.path || "").replace(/\\/g, "/"); if (!supportedAsset(relative)) throw new Error("不支援的 Workspace Asset 類型。"); const target = safePath(relative); if (!fs.existsSync(target) || !fs.statSync(target).isFile()) throw new Error("找不到 Workspace Asset。"); const meta = assetMeta(target); const data = fs.readFileSync(target); res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify({ ok: true, ...meta, content: meta.kind === "code" || meta.kind === "config" || meta.kind === "text" ? data.toString("utf8") : undefined, base64: meta.kind === "code" || meta.kind === "config" || meta.kind === "text" ? undefined : data.toString("base64") })); return; }
@@ -371,6 +383,77 @@ function vitePluginLocalKnowledgeManager(): Plugin {
       res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: true }));
     } catch (error) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) })); }
   }); }, handleHotUpdate(context) { if (internalWrites.delete(context.file)) return []; } };
+}
+
+type JavaRunMode = "compile" | "run";
+type JavaProcessResult = { ok: boolean; stdout: string; stderr: string; durationMs: number; timedOut: boolean };
+
+const JAVA_RUN_TIMEOUT_MS = 5000;
+const JAVA_RUN_MAX_OUTPUT_BYTES = 64 * 1024;
+const JAVA_RUN_MAX_SOURCE_BYTES = 256 * 1024;
+const JAVA_RUN_MAX_HEAP_MB = 128;
+
+function truncateJavaOutput(value: unknown) {
+  const text = String(value ?? "");
+  if (Buffer.byteLength(text, "utf8") <= JAVA_RUN_MAX_OUTPUT_BYTES) return text;
+  return `${text.slice(0, JAVA_RUN_MAX_OUTPUT_BYTES)}\n[output truncated]`;
+}
+
+function javaSourcePolicy(source: string) {
+  const blockedPatterns = [
+    /\b(?:Runtime\.getRuntime|ProcessBuilder|System\.setSecurityManager|System\.exit|Class\.forName)\b/,
+    /\b(?:java\.io|java\.nio|java\.net|javax\.net|java\.lang\.reflect|java\.lang\.instrument|java\.sql)\b/,
+    /\b(?:Thread|Executor|ForkJoin|CompletableFuture|sun\.misc\.Unsafe|jdk\.internal)\b/,
+  ];
+  const blocked = blockedPatterns.find((pattern) => pattern.test(source));
+  if (blocked) throw new Error("此 Playground 不允許啟動外部程序、網路、反射或 JVM internal API。請只執行教學用的純 Java 範例。");
+}
+
+async function runJavaProcess(command: string, args: string[], cwd: string): Promise<JavaProcessResult> {
+  const startedAt = Date.now();
+  try {
+    const result = await execFile(command, args, { cwd, timeout: JAVA_RUN_TIMEOUT_MS, maxBuffer: JAVA_RUN_MAX_OUTPUT_BYTES * 2, windowsHide: true });
+    return { ok: true, stdout: truncateJavaOutput(result.stdout), stderr: truncateJavaOutput(result.stderr), durationMs: Date.now() - startedAt, timedOut: false };
+  } catch (error: any) {
+    const timedOut = error?.code === "ETIMEDOUT" || error?.killed === true;
+    return { ok: false, stdout: truncateJavaOutput(error?.stdout), stderr: truncateJavaOutput(error?.stderr || error?.message), durationMs: Date.now() - startedAt, timedOut };
+  }
+}
+
+async function runJavaSource(sourcePath: string, source: string, mode: JavaRunMode) {
+  if (!sourcePath.toLocaleLowerCase().endsWith(".java")) throw new Error("Java Playground 只允許執行 .java 檔案。");
+  if (Buffer.byteLength(source, "utf8") > JAVA_RUN_MAX_SOURCE_BYTES) throw new Error("Java 範例不可超過 256 KB。");
+  const normalizedPath = sourcePath.replace(/\\/g, "/");
+  if (!normalizedPath || normalizedPath.split("/").some((segment) => !segment || segment.startsWith(".") || segment === "..")) throw new Error("Java source path 不合法。");
+  javaSourcePolicy(source);
+
+  const fileName = path.basename(normalizedPath);
+  const simpleName = fileName.slice(0, -".java".length);
+  if (!/^[A-Za-z_$][\w$]*$/.test(simpleName)) throw new Error("Java 檔名必須對應合法的 class name。");
+  const packageMatch = source.match(/^\s*package\s+([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*;/m);
+  const className = packageMatch ? `${packageMatch[1]}.${simpleName}` : simpleName;
+  const runRoot = fs.mkdtempSync(path.join(tmpdir(), "javabase-java-run-"));
+  const sourceFile = path.join(runRoot, fileName);
+  fs.writeFileSync(sourceFile, source, "utf8");
+
+  try {
+    const compile = await runJavaProcess("javac", ["-encoding", "UTF-8", "-Xlint:all", "-proc:none", "-d", runRoot, sourceFile], runRoot);
+    const result = {
+      success: compile.ok,
+      mode,
+      sourcePath: normalizedPath,
+      className,
+      compile,
+      limits: { timeoutMs: JAVA_RUN_TIMEOUT_MS, maxHeapMb: JAVA_RUN_MAX_HEAP_MB, maxOutputBytes: JAVA_RUN_MAX_OUTPUT_BYTES },
+    } as { success: boolean; mode: JavaRunMode; sourcePath: string; className: string; compile: JavaProcessResult; execution?: JavaProcessResult; limits: { timeoutMs: number; maxHeapMb: number; maxOutputBytes: number } };
+    if (!compile.ok || mode === "compile") return result;
+
+    result.execution = await runJavaProcess("java", ["-Xmx128m", "-Xss256k", "-Dfile.encoding=UTF-8", "-Djava.io.tmpdir=" + runRoot, "-Duser.home=" + runRoot, "-cp", runRoot, className], runRoot);
+    result.success = result.execution.ok;
+    return result;
+  } finally {
+    fs.rmSync(runRoot, { recursive: true, force: true });
+  }
 }
 
 type GitChange = { path: string; status: string };

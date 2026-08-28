@@ -21,6 +21,30 @@ export type FileRelation = {
   label: string;
 };
 
+export type JavaRunMode = "compile" | "run";
+
+export type JavaProcessResult = {
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+  durationMs: number;
+  timedOut: boolean;
+};
+
+export type JavaRunResult = {
+  success: boolean;
+  mode: JavaRunMode;
+  sourcePath: string;
+  className: string;
+  compile: JavaProcessResult;
+  execution?: JavaProcessResult;
+  limits: {
+    timeoutMs: number;
+    maxHeapMb: number;
+    maxOutputBytes: number;
+  };
+};
+
 async function localResponse<T>(endpoint: string, init?: RequestInit) {
   const response = await fetch(`/api/local/${endpoint}`, { cache: "no-store", ...init });
   const result = await response.json().catch(() => ({ ok: false, error: "本機 Assets 服務未回傳可讀資料。" }));
@@ -43,6 +67,15 @@ export async function getWorkspaceAssets() {
 
 export async function readWorkspaceAsset(path: string) {
   return localResponse<WorkspaceAssetContent>("asset", jsonRequest({ path }));
+}
+
+export function canRunJavaAsset(asset: WorkspaceAssetContent | null) {
+  return asset?.kind === "code" && asset.extension === "java" && typeof asset.content === "string";
+}
+
+export async function runJavaAsset(path: string, content: string, mode: JavaRunMode = "run") {
+  const result = await localResponse<JavaRunResult>("java-run", jsonRequest({ path, content, mode }));
+  return result;
 }
 
 export function workspaceAssetUrl(path: string, download = false) {
