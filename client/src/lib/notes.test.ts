@@ -40,6 +40,24 @@ describe("notes", () => {
     expect(developmentNotes.find((note) => note.slug === "java-development")?.path).toContain("10-java-development/00-java-development.md");
   });
 
+  it("loads the C language fundamentals track", () => {
+    const cNotes = searchNotes("", "C 語言基礎");
+    const expectedSlugs = [
+      "c-basics",
+      "c-syntax-types-io",
+      "c-control-flow-functions",
+      "c-arrays-strings",
+      "c-pointers-memory",
+      "c-structs-enums-headers",
+      "c-build-debugging",
+    ];
+
+    expect(categories).toContain("C 語言基礎");
+    expect(cNotes.map((note) => note.slug)).toEqual(expect.arrayContaining(expectedSlugs));
+    expect(cNotes.every((note) => note.tags.includes("C"))).toBe(true);
+    expect(cNotes.find((note) => note.slug === "c-basics")?.path).toContain("11-c-basics/00-c-basics.md");
+  });
+
   it("searches bilingual terms and filters by category or tag", () => {
     const variableNotes = searchNotes("variable", "全部");
     const fabricNotes = searchNotes("", "全部", "Fabric");

@@ -55,6 +55,21 @@ export const bilingualGuides: Record<string, BilingualGuide> = {
       { zh: "切片", en: "slice" },
     ],
   },
+  "C 語言基礎": {
+    explanation: "C 語言學習要同時掌握 syntax、compiler 與 memory model；中文建立概念，英文術語用來閱讀 compiler、GDB 與標準函式庫文件。",
+    checkpoint: "Can you trace a C program from source and compiler warnings to its memory ownership and runtime behavior?",
+    terms: [
+      { zh: "編譯器", en: "compiler" },
+      { zh: "標頭檔", en: "header" },
+      { zh: "指標", en: "pointer" },
+      { zh: "解參照", en: "dereference" },
+      { zh: "動態記憶體", en: "dynamic memory" },
+      { zh: "陣列邊界", en: "array boundary" },
+      { zh: "結構", en: "struct" },
+      { zh: "未定義行為", en: "undefined behavior" },
+      { zh: "原生開發", en: "native development" },
+    ],
+  },
   "物件導向": {
     explanation: "把資料與行為放在一起時，中文理解關係，英文認出 class 與 encapsulation。",
     checkpoint: "Describe the difference between a class and an object in one sentence.",

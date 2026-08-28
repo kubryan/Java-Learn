@@ -31,6 +31,7 @@ export const javaBaseTree: KnowledgeFolder = {
       ],
     },
     { id: "python", label: "Python", categories: ["Python 基礎"], directory: "10-python" },
+    { id: "c-language", label: "C 語言", categories: ["C 語言基礎"], directory: "11-c-basics" },
     {
       id: "minecraft",
       label: "Minecraft",

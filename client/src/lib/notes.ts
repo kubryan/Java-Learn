@@ -28,6 +28,7 @@ export const categories = [
   "Exception",
   "JVM",
   "Python 基礎",
+  "C 語言基礎",
   "物件導向",
   "桌面工具",
   "後端 API",
@@ -46,6 +47,7 @@ const noteModules = import.meta.glob("../content/**/*.md", {
 function categoryTags(category: string) {
   if (["Java 基礎", "Java 開發", "Collections", "Java 現代語法", "Exception", "JVM", "物件導向", "桌面工具", "後端 API"].includes(category)) return ["Java"];
   if (category === "Python 基礎") return ["Python"];
+  if (category === "C 語言基礎") return ["C", "Native Development"];
   if (category === "Fabric") return ["Minecraft", "Fabric"];
   if (category === "NeoForge") return ["Minecraft", "NeoForge"];
   if (category === "Minecraft 共通") return ["Minecraft"];
